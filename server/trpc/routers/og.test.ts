@@ -1,16 +1,16 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { TRPCError } from "@trpc/server";
-import { createTestCaller } from "../tests/testHelpers";
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { TRPCError } from '@trpc/server';
+import { createTestCaller } from '../../tests/testHelpers';
 
 // Mock global fetch
 global.fetch = vi.fn();
 
-describe("ogRouter.fetch", () => {
+describe('ogRouter.fetch', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("should fetch OG metadata for allowed domain", async () => {
+  it('should fetch OG metadata for allowed domain', async () => {
     const mockHtml = `
       <html>
         <head>
@@ -25,91 +25,110 @@ describe("ogRouter.fetch", () => {
       new Response(mockHtml, { status: 200 })
     );
 
-    const caller = createTestCaller({ secret: process.env.EXTENSION_SHARED_SECRET });
+    const caller = createTestCaller({
+      secret: process.env.EXTENSION_SHARED_SECRET,
+    });
     const result = await caller.og.fetch({
-      url: "https://thehill.com/article"
+      url: 'https://thehill.com/article',
     });
 
     expect(result).toEqual({
-      title: "Test Article",
-      description: "This is a test article",
-      imageUrl: "https://example.com/image.jpg"
+      title: 'Test Article',
+      description: 'This is a test article',
+      imageUrl: 'https://example.com/image.jpg',
     });
   });
 
-  it("should throw BAD_REQUEST for blocked domain", async () => {
-    const caller = createTestCaller({ secret: process.env.EXTENSION_SHARED_SECRET });
+  it('should throw BAD_REQUEST for blocked domain', async () => {
+    const caller = createTestCaller({
+      secret: process.env.EXTENSION_SHARED_SECRET,
+    });
     await expect(
       caller.og.fetch({
-        url: "https://blocked-domain.com/article"
+        url: 'https://blocked-domain.com/article',
       })
     ).rejects.toThrow();
   });
 
-  it("should throw NOT_FOUND when 403 status received", async () => {
+  it('should throw NOT_FOUND when 403 status received', async () => {
     vi.mocked(global.fetch).mockResolvedValueOnce(
-      new Response("Forbidden", { status: 403 })
+      new Response('Forbidden', { status: 403 })
     );
 
-    const caller = createTestCaller({ secret: process.env.EXTENSION_SHARED_SECRET });
+    const caller = createTestCaller({
+      secret: process.env.EXTENSION_SHARED_SECRET,
+    });
     await expect(
       caller.og.fetch({
-        url: "https://thehill.com/article"
+        url: 'https://thehill.com/article',
       })
     ).rejects.toThrow();
   });
 
-  it("should throw INTERNAL_SERVER_ERROR for upstream errors", async () => {
+  it('should throw INTERNAL_SERVER_ERROR for upstream errors', async () => {
     vi.mocked(global.fetch).mockResolvedValueOnce(
-      new Response("Server Error", { status: 500 })
+      new Response('Server Error', { status: 500 })
     );
 
-    const caller = createTestCaller({ secret: process.env.EXTENSION_SHARED_SECRET });
+    const caller = createTestCaller({
+      secret: process.env.EXTENSION_SHARED_SECRET,
+    });
     await expect(
       caller.og.fetch({
-        url: "https://thehill.com/article"
+        url: 'https://thehill.com/article',
       })
     ).rejects.toThrow();
   });
 
-  it("should throw NOT_FOUND for missing OG tags", async () => {
+  it('should throw NOT_FOUND for missing OG tags', async () => {
     const mockHtml = `<html><head></head></html>`;
 
     vi.mocked(global.fetch).mockResolvedValueOnce(
       new Response(mockHtml, { status: 200 })
     );
 
-    const caller = createTestCaller({ secret: process.env.EXTENSION_SHARED_SECRET });
+    const caller = createTestCaller({
+      secret: process.env.EXTENSION_SHARED_SECRET,
+    });
     await expect(
       caller.og.fetch({
-        url: "https://thehill.com/article"
+        url: 'https://thehill.com/article',
       })
     ).rejects.toThrow();
   });
 
-  it("should throw UNAUTHORIZED without valid secret", async () => {
-    const caller = createTestCaller({ secret: "invalid-secret" });
+  it('should throw UNAUTHORIZED without valid secret', async () => {
+    const caller = createTestCaller({ secret: 'invalid-secret' });
     await expect(
       caller.og.fetch({
-        url: "https://thehill.com/article"
+        url: 'https://thehill.com/article',
       })
     ).rejects.toThrow();
   });
 
-  it("should timeout after 5 seconds", async () => {
-    vi.mocked(global.fetch).mockImplementationOnce(
-      () => new Promise(resolve => setTimeout(() => resolve(new Response("")), 10000))
-    );
+  it(
+    'should timeout after 5 seconds',
+    async () => {
+      vi.mocked(global.fetch).mockImplementationOnce(
+        () =>
+          new Promise((resolve) =>
+            setTimeout(() => resolve(new Response('')), 10000)
+          )
+      );
 
-    const caller = createTestCaller({ secret: process.env.EXTENSION_SHARED_SECRET });
-    await expect(
-      caller.og.fetch({
-        url: "https://thehill.com/article"
-      })
-    ).rejects.toThrow();
-  }, { timeout: 15000 });
+      const caller = createTestCaller({
+        secret: process.env.EXTENSION_SHARED_SECRET,
+      });
+      await expect(
+        caller.og.fetch({
+          url: 'https://thehill.com/article',
+        })
+      ).rejects.toThrow();
+    },
+    { timeout: 15000 }
+  );
 
-  it("should enforce rate limiting", async () => {
+  it('should enforce rate limiting', async () => {
     const mockHtml = `
       <html>
         <head>
@@ -124,16 +143,19 @@ describe("ogRouter.fetch", () => {
       new Response(mockHtml, { status: 200 })
     );
 
-    const caller = createTestCaller({ secret: process.env.EXTENSION_SHARED_SECRET, ip: "127.0.0.1" });
+    const caller = createTestCaller({
+      secret: process.env.EXTENSION_SHARED_SECRET,
+      ip: '127.0.0.1',
+    });
 
     // Make 10 successful requests (should all succeed)
     for (let i = 0; i < 10; i++) {
-      await caller.og.fetch({ url: "https://thehill.com/article" });
+      await caller.og.fetch({ url: 'https://thehill.com/article' });
     }
 
     // 11th request should hit rate limit
     await expect(
-      caller.og.fetch({ url: "https://thehill.com/article" })
+      caller.og.fetch({ url: 'https://thehill.com/article' })
     ).rejects.toThrow();
   });
 });
