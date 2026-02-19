@@ -15,6 +15,17 @@ const authMiddleware = t.middleware(({ ctx, next }) => {
     });
   }
 
+  // Check Origin if ALLOWED_ORIGIN is set
+  if (env.ALLOWED_ORIGIN) {
+    const origin = ctx.req.headers.get("origin");
+    if (origin !== env.ALLOWED_ORIGIN) {
+      throw new TRPCError({
+        code: "UNAUTHORIZED",
+        message: "Invalid origin"
+      });
+    }
+  }
+
   return next();
 });
 

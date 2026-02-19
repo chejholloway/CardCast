@@ -134,6 +134,16 @@ Planned components:
 
 ---
 
+## Features
+
+- **Domain Management**: Configure allowed domains for link card fetching directly in the extension popup.
+- **Animations**: Smooth microinteractions using Framer Motion for button hovers, card appearances, and loading states.
+- **Theme Awareness**: Automatically adapts to Bluesky's dark/light mode by detecting theme changes on the page.
+- **Rate Limiting**: Backend enforces 10 requests per minute per IP to prevent abuse.
+- **Type-Safe Communication**: End-to-end type safety between extension and backend via tRPC and Zod.
+
+---
+
 ## Type Safety & Shared Types
 
 - The backend exports a single **`AppRouter`** type from `server/trpc/router.ts`.

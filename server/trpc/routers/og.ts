@@ -24,6 +24,23 @@ const realisticHeaders: Record<string, string> = {
   "Accept-Language": "en-US,en;q=0.9"
 };
 
+// Simple in-memory rate limiter (resets on cold start)
+const rateLimitMap = new Map<string, number[]>();
+const RATE_LIMIT = 10; // requests
+const RATE_WINDOW = 60 * 1000; // 1 minute
+
+const checkRateLimit = (ip: string): boolean => {
+  const now = Date.now();
+  const timestamps = rateLimitMap.get(ip) || [];
+  const recent = timestamps.filter(ts => now - ts < RATE_WINDOW);
+  if (recent.length >= RATE_LIMIT) {
+    return false;
+  }
+  recent.push(now);
+  rateLimitMap.set(ip, recent);
+  return true;
+};
+
 const withTimeout = async <T,>(promise: Promise<T>, ms: number): Promise<T> => {
   let timeoutId: NodeJS.Timeout;
   const timeoutPromise = new Promise<never>((_, reject) => {
@@ -55,7 +72,15 @@ export const ogRouter = router({
   fetch: protectedProcedure
     .input(ogInputSchema)
     .output(ogOutputSchema)
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
+      const ip = ctx.req.ip ?? "unknown";
+      if (!checkRateLimit(ip)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Rate limit exceeded"
+        });
+      }
+
       const urlObj = new URL(input.url);
       if (!ALLOWED_DOMAINS.includes(urlObj.hostname)) {
         throw new TRPCError({
