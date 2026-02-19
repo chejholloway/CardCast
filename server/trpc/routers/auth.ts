@@ -36,11 +36,11 @@ export const authRouter = router({
       } catch (error) {
         log.warn("Bluesky login failed", {
           identifier: input.identifier,
-          error: error instanceof Error ? error.message : "Unknown error"
+          error: error instanceof Error ? error.stack || error.message : JSON.stringify(error)
         });
         throw new TRPCError({
           code: "UNAUTHORIZED",
-          message: "Invalid Bluesky credentials"
+          message: error instanceof Error ? error.message : "Invalid Bluesky credentials"
         });
       }
 

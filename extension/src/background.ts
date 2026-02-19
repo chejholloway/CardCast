@@ -110,13 +110,18 @@ chrome.runtime.onMessage.addListener(
           return;
         }
       } catch (error) {
+        // Log error for debugging
+        // eslint-disable-next-line no-console
+        console.error("Background error:", error);
         // We intentionally only send a safe error message back to the caller.
         sendResponse({
           ok: false,
           error:
             error instanceof Error
               ? error.message
-              : "Unexpected background error"
+              : typeof error === 'string'
+                ? error
+                : JSON.stringify(error)
         });
       }
     })();

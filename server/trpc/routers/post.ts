@@ -95,7 +95,7 @@ export const postRouter = router({
       } catch (error) {
         thumbUploaded = false;
         log.warn("Thumbnail upload failed, falling back to no-thumb post", {
-          error: error instanceof Error ? error.message : "Unknown error",
+          error: error instanceof Error ? error.stack || error.message : JSON.stringify(error),
           imageUrl: input.imageUrl
         });
       }
@@ -138,11 +138,11 @@ export const postRouter = router({
         };
       } catch (error) {
         log.error("Failed to create Bluesky post", {
-          error: error instanceof Error ? error.message : "Unknown error"
+          error: error instanceof Error ? error.stack || error.message : JSON.stringify(error)
         });
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to create post"
+          message: error instanceof Error ? error.message : "Failed to create post"
         });
       }
     })

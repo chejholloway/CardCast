@@ -28,15 +28,6 @@ const isSupportedUrl = (value: string, domains: string[]): boolean => {
   }
 };
 
-interface CardState {
-  status: "idle" | "loading" | "error" | "success";
-  error?: string;
-  data?: {
-    title: string;
-    description: string;
-    imageUrl: string;
-  };
-}
 
 const LinkCardComposer: React.FC<{ url: string }> = ({ url }) => {
   const [isDark, setIsDark] = useState(true); // Default to dark

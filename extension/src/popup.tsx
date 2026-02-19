@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { trpc } from "./trpcClient";
+import { trpc, trpcClient } from "./trpcClient";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -13,17 +13,12 @@ const queryClient = new QueryClient({
 });
 
 const TRPCProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <QueryClientProvider client={queryClient}>
-    {children}
-  </QueryClientProvider>
+  <trpc.Provider client={trpcClient} queryClient={queryClient}>
+    <QueryClientProvider client={queryClient}>
+      {children}
+    </QueryClientProvider>
+  </trpc.Provider>
 );
-
-interface SessionState {
-  loading: boolean;
-  loggedIn: boolean;
-  handle?: string;
-  error?: string;
-}
 
 const Popup: React.FC = () => {
   const [identifier, setIdentifier] = useState("");

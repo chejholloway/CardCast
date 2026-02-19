@@ -99,8 +99,7 @@ export const ogRouter = router({
         );
       } catch (error) {
         log.error("OG fetch failed", {
-          error:
-            error instanceof Error ? error.message : "Unknown fetch error",
+          error: error instanceof Error ? error.stack || error.message : JSON.stringify(error),
           url: input.url
         });
         if (error instanceof TRPCError) {
@@ -108,7 +107,7 @@ export const ogRouter = router({
         }
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to fetch URL"
+          message: error instanceof Error ? error.message : "Failed to fetch URL"
         });
       }
 

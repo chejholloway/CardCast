@@ -4,7 +4,8 @@ import { getEnv } from "../env";
 
 const t = initTRPC.context<TRPCContext>().create();
 
-const authMiddleware = t.middleware(({ ctx, next }) => {
+
+const authMiddleware = t.middleware(async ({ ctx, next }) => {
   const env = getEnv();
   const secret = ctx.req.headers.get("x-extension-secret");
 
@@ -24,6 +25,7 @@ const authMiddleware = t.middleware(({ ctx, next }) => {
         message: "Invalid origin"
       });
     }
+    // Note: CORS headers must be set at the API route level (e.g., in Next.js route handler), not here.
   }
 
   return next();

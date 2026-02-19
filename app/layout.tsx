@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import "./globals.css";
+import "../styles/globals.css";
 
 export const metadata = {
   title: "Bluesky Link Card Backend",

@@ -134,12 +134,17 @@ Planned components:
 
 ---
 
+
 ## Features
 
-- **Domain Management**: Configure allowed domains for link card fetching directly in the extension popup.
-- **Animations**: Smooth microinteractions using Framer Motion for button hovers, card appearances, and loading states.
+- **Domain Management**: Configure allowed domains for link card fetching directly in the extension popup. The popup UI allows you to add or remove domains (e.g., `thehill.com`, `theroot.com`) that are permitted for link card previews. These are stored in `chrome.storage.session` and used by the content script to validate pasted URLs.
+
+- **Animations & Motion UX**: The extension uses [Framer Motion](https://www.framer.com/motion/) for smooth microinteractions, including animated button hovers, card fade/slide-in, and loading states, providing a modern and delightful user experience.
+
 - **Theme Awareness**: Automatically adapts to Bluesky's dark/light mode by detecting theme changes on the page.
+
 - **Rate Limiting**: Backend enforces 10 requests per minute per IP to prevent abuse.
+
 - **Type-Safe Communication**: End-to-end type safety between extension and backend via tRPC and Zod.
 
 ---
