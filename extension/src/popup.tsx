@@ -27,12 +27,25 @@ const Popup: React.FC = () => {
   const [appPassword, setAppPassword] = useState("");
   const [domains, setDomains] = useState<string[]>([]);
   const [newDomain, setNewDomain] = useState("");
+  const [liveMessage, setLiveMessage] = useState<string>("");
 
 
   const { data: authStatus, refetch: refetchAuth } = trpc.auth.status.useQuery();
   const loginMutation = trpc.auth.login.useMutation({
     onSuccess: () => refetchAuth()
   });
+
+  // Accessibility live messages
+  useEffect(() => {
+    if (loginMutation.isPending) {
+      setLiveMessage("Signing in to Bluesky");
+    } else if (authStatus?.loggedIn) {
+      const h = authStatus?.session?.handle ?? "";
+      setLiveMessage(h ? `Logged in as @${h}` : "Logged in");
+    } else if (authStatus) {
+      setLiveMessage("Not logged in");
+    }
+  }, [loginMutation.isPending, authStatus]);
 
   useEffect(() => {
     // Load domains
@@ -55,6 +68,7 @@ const Popup: React.FC = () => {
       setDomains(updated);
       chrome.storage.session.set({ allowedDomains: updated });
       setNewDomain("");
+      setLiveMessage(`Domain added: ${newDomain}`);
     }
   };
 
@@ -62,13 +76,15 @@ const Popup: React.FC = () => {
     const updated = domains.filter(d => d !== domain);
     setDomains(updated);
     chrome.storage.session.set({ allowedDomains: updated });
+    setLiveMessage(`Domain removed: ${domain}`);
   };
 
   const loggedIn = authStatus?.loggedIn ?? false;
   const handle = authStatus?.session?.handle;
 
   return (
-    <div className="w-80 p-4 bg-slate-950 text-slate-100 text-sm">
+    <div role="region" aria-label="Bluesky Link Card popup" className="w-80 p-4 bg-slate-950 text-slate-100 text-sm">
+      <div aria-live="polite" className="sr-only" id="popup-live">{liveMessage}</div>
       <h1 className="text-base font-semibold mb-2">Bluesky Link Card</h1>
       {loginMutation.isPending && (
         <div className="text-xs text-slate-300 mb-2">Signing in…</div>
@@ -91,7 +107,9 @@ const Popup: React.FC = () => {
           <label className="block">
             <span className="text-xs text-slate-300">Bluesky handle</span>
             <input
-              className="mt-1 w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 text-xs"
+              id="handle-input"
+              aria-label="Bluesky handle"
+              className="mt-1 w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-sky-500"
               value={identifier}
               onChange={e => setIdentifier(e.target.value)}
               placeholder="you.bsky.social"
@@ -100,16 +118,19 @@ const Popup: React.FC = () => {
           <label className="block">
             <span className="text-xs text-slate-300">App password</span>
             <input
+              id="password-input"
+              aria-label="App password"
               type="password"
-              className="mt-1 w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 text-xs"
+              className="mt-1 w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-sky-500"
               value={appPassword}
               onChange={e => setAppPassword(e.target.value)}
               placeholder="xxxx-xxxx-xxxx-xxxx"
             />
           </label>
           <button
+            aria-label="Sign in to Bluesky"
             type="button"
-            className="mt-2 w-full rounded bg-sky-600 py-1 text-xs font-medium hover:bg-sky-500"
+            className="mt-2 w-full rounded bg-sky-600 py-1 text-xs font-medium hover:bg-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500"
             onClick={onLogin}
             disabled={loginMutation.isPending}
           >
@@ -120,13 +141,14 @@ const Popup: React.FC = () => {
 
       <div className="border-t border-slate-800 pt-2 mt-2">
         <h2 className="text-sm font-medium mb-2">Allowed Domains</h2>
-        <div className="space-y-1 mb-2">
+        <div role="list" aria-label="Allowed domains" className="space-y-1 mb-2">
           {domains.map(domain => (
-            <div key={domain} className="flex justify-between items-center">
+            <div key={domain} role="listitem" className="flex justify-between items-center">
               <span className="text-xs">{domain}</span>
               <button
+                aria-label={`Remove domain ${domain}`}
                 type="button"
-                className="text-xs text-red-400 hover:text-red-300"
+                className="text-xs text-red-400 hover:text-red-300 focus:outline-none focus:ring-2 focus:ring-red-500"
                 onClick={() => removeDomain(domain)}
               >
                 Remove
@@ -136,14 +158,17 @@ const Popup: React.FC = () => {
         </div>
         <div className="flex gap-1">
           <input
-            className="flex-1 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-xs"
+            aria-label="Add domain"
+            id="domain-input"
+            className="flex-1 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-sky-500"
             value={newDomain}
             onChange={e => setNewDomain(e.target.value)}
             placeholder="example.com"
           />
           <button
+            aria-label="Add domain"
             type="button"
-            className="rounded bg-sky-600 px-2 py-1 text-xs font-medium hover:bg-sky-500"
+            className="rounded bg-sky-600 px-2 py-1 text-xs font-medium hover:bg-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500"
             onClick={addDomain}
           >
             Add

@@ -10,7 +10,10 @@
     "start": "next start",
     "lint": "npx oxlint .",
     "build:ext": "tsc -p extension/tsconfig.json",
-    "build:css": "tailwindcss -c tailwind.config.cjs -i ./styles/globals.css -o ./public/tailwind.css --minify"
+    "build:css": "tailwindcss -c tailwind.config.cjs -i ./styles/globals.css -o ./public/tailwind.css --minify",
+    "lint:accessibility": "eslint extension --ext .ts,.tsx,.js,.jsx",
+    "typecheck": "tsc -p tsconfig.json",
+    "ci-lite": "npm ci && npm run lint && npm run lint:accessibility && npm run typecheck && npm run build:ext && npm run build:css"
   },
   "dependencies": {
     "@atproto/api": "^0.13.9",
@@ -33,6 +36,11 @@
     "postcss": "^8.4.38",
     "prettier": "^3.2.5",
     "tailwindcss": "^3.4.3",
-    "typescript": "^5.4.2"
+    "typescript": "^5.4.2",
+    "eslint": "^8.56.0",
+    "@typescript-eslint/parser": "^5.64.0",
+    "@typescript-eslint/eslint-plugin": "^5.64.0",
+    "eslint-plugin-jsx-a11y": "^6.6.0",
+    "eslint-plugin-react": "^7.31.0"
   }
 }

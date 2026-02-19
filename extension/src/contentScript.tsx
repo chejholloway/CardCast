@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { trpc } from "./trpcClient";
+import { trpc, trpcClient } from "./trpcClient";
 import { motion } from "framer-motion";
 
 const queryClient = new QueryClient({
@@ -13,7 +13,7 @@ const queryClient = new QueryClient({
   }
 });
 
-import { trpcClient } from "./trpcClient";
+// (trpcClient is re-exported with trpc for provider usage)
 
 const TRPCProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <QueryClientProvider client={queryClient}>
@@ -87,6 +87,7 @@ const LinkCardComposer: React.FC<{ url: string }> = ({ url }) => {
   };
 
   const status = isLoading ? "loading" : error ? "error" : data ? "success" : "idle";
+  const statusMessage = status === "loading" ? "Fetching metadata…" : status === "error" ? `Failed to fetch card: ${error?.message ?? "Unknown error"}` : status === "success" && data ? "Card fetched" : "";
 
   const cardClasses = isDark
     ? "bsext-card mt-2 rounded-xl border border-slate-700 bg-slate-900/80 p-3 text-sm text-slate-100"
@@ -94,14 +95,18 @@ const LinkCardComposer: React.FC<{ url: string }> = ({ url }) => {
 
   return (
     <motion.div
+      role="region"
+      aria-label={`Link card preview for ${url}`}
       className={cardClasses}
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
+      <div aria-live="polite" className="sr-only">{statusMessage}</div>
       <div className="flex justify-between items-center mb-2">
         <span className={`font-medium ${isDark ? 'text-slate-50' : 'text-gray-900'}`}>Link card preview</span>
         <motion.button
+          aria-label="Fetch link metadata"
           type="button"
           className={`px-2 py-1 text-xs rounded ${isDark ? 'bg-sky-600 hover:bg-sky-500' : 'bg-blue-600 hover:bg-blue-500'}`}
           onClick={fetchMetadata}
@@ -168,7 +173,7 @@ const LinkCardComposer: React.FC<{ url: string }> = ({ url }) => {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={data.imageUrl}
-              alt=""
+              alt={`Preview image for ${data.title ?? url}`}
               className="h-full w-full object-cover"
             />
           </motion.div>
