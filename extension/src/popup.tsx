@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
 import { trpc, trpcClient } from "./trpcClient";
 
 const queryClient = new QueryClient({
@@ -12,12 +13,13 @@ const queryClient = new QueryClient({
   }
 });
 
+
 const TRPCProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <trpc.Provider client={trpcClient} queryClient={queryClient}>
-    <QueryClientProvider client={queryClient}>
+  <QueryClientProvider client={queryClient}>
+    <trpc.Provider client={trpcClient} queryClient={queryClient}>
       {children}
-    </QueryClientProvider>
-  </trpc.Provider>
+    </trpc.Provider>
+  </QueryClientProvider>
 );
 
 const Popup: React.FC = () => {
@@ -25,6 +27,7 @@ const Popup: React.FC = () => {
   const [appPassword, setAppPassword] = useState("");
   const [domains, setDomains] = useState<string[]>([]);
   const [newDomain, setNewDomain] = useState("");
+
 
   const { data: authStatus, refetch: refetchAuth } = trpc.auth.status.useQuery();
   const loginMutation = trpc.auth.login.useMutation({
@@ -34,7 +37,11 @@ const Popup: React.FC = () => {
   useEffect(() => {
     // Load domains
     chrome.storage.session.get(["allowedDomains"], (result) => {
-      setDomains(result.allowedDomains ?? ["thehill.com", "theroot.com", "usanews.com"]);
+      let allowed: string[] = ["thehill.com", "theroot.com", "usanews.com"];
+      if (result && Array.isArray(result.allowedDomains)) {
+        allowed = result.allowedDomains;
+      }
+      setDomains(allowed);
     });
   }, []);
 

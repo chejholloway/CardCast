@@ -1,24 +1,26 @@
-import { createTRPCProxyClient, httpBatchLink } from "@trpc/client";
-import type { AppRouter } from "../../server/trpc/router";
 
-// This will be replaced at build-time or configured via extension options.
+import { createTRPCReact } from '@trpc/react-query';
+import { httpBatchLink } from '@trpc/client';
+import type { AppRouter } from '../../server/trpc/router';
+
 const BACKEND_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL ?? "https://your-backend-url.vercel.app";
+  process.env.NEXT_PUBLIC_BACKEND_URL ?? 'https://your-backend-url.vercel.app';
 
-// Shared secret must match EXTENSION_SHARED_SECRET on the backend.
 const EXTENSION_SHARED_SECRET =
-  process.env.EXTENSION_SHARED_SECRET ?? "REPLACE_WITH_REAL_SECRET";
+  process.env.EXTENSION_SHARED_SECRET ?? 'REPLACE_WITH_REAL_SECRET';
 
-export const trpc = createTRPCProxyClient<AppRouter>({
+export const trpc = createTRPCReact<AppRouter>();
+
+export const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
       url: `${BACKEND_URL}/api/trpc`,
       headers() {
         return {
-          "x-extension-secret": EXTENSION_SHARED_SECRET
+          'x-extension-secret': EXTENSION_SHARED_SECRET,
         };
-      }
-    })
-  ]
+      },
+    }),
+  ],
 });
 

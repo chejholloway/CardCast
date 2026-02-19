@@ -13,9 +13,13 @@ const queryClient = new QueryClient({
   }
 });
 
+import { trpcClient } from "./trpcClient";
+
 const TRPCProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <QueryClientProvider client={queryClient}>
-    {children}
+    <trpc.Provider client={trpcClient} queryClient={queryClient}>
+      {children}
+    </trpc.Provider>
   </QueryClientProvider>
 );
 
