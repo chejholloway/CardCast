@@ -40,8 +40,11 @@ try {
   // If a factory exists in this version, use it
   if (typeof mod?.createCallerFactory === 'function') {
     createCaller = mod.createCallerFactory(appRouter);
+  } else if (typeof mod?.createCaller === 'function') {
+    // Some versions expose a createCaller helper instead
+    createCaller = mod.createCaller(appRouter);
   } else {
-    throw new Error('createCallerFactory not available');
+    throw new Error('No compatible caller factory found');
   }
 } catch {
   // Fallback: provide a dummy caller that will throw if used
