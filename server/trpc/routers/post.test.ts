@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { TRPCError } from '@trpc/server';
 import * as atproto from '@atproto/api';
 import { createTestCaller } from '../../tests/testHelpers';
 

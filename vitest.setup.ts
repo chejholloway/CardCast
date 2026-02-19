@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom";
-import { expect, afterAll, afterEach, beforeAll, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, vi } from "vitest";
 
 // Setup MSW (Mock Service Worker)
 import { server } from "./server/tests/mswServer";

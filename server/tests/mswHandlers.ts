@@ -1,4 +1,5 @@
 import { http, HttpResponse } from "msw";
+import { log } from "../log";
 
 export const handlers = [
   // Mock successful OG fetch
