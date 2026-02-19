@@ -1,6 +1,6 @@
 /**
  * @fileoverview Bluesky post creation router.
- * 
+ *
  * This router handles creating Bluesky posts with Open Graph link cards.
  * It:
  * - Accepts post text, URL, and OG metadata
@@ -8,16 +8,16 @@
  * - Creates an app.bsky.feed.post record with app.bsky.embed.external embed
  * - Falls back to text-only posts if image upload fails
  * - Includes 10-second timeouts for image fetch and post creation
- * 
+ *
  * @module server/trpc/routers/post
  */
 
-import { TRPCError } from "@trpc/server";
-import { z } from "zod";
-import { protectedProcedure, router } from "../base";
-import { log } from "../../log";
-import { getEnv } from "../../env";
-import { Agent } from "@atproto/api";
+import { TRPCError } from '@trpc/server';
+import { z } from 'zod';
+import { protectedProcedure, router } from '../base';
+import { log } from '../../log';
+import { getEnv } from '../../env';
+import { BskyAgent } from '@atproto/api';
 
 /** Input schema for post creation */
 const postInputSchema = z.object({
@@ -34,7 +34,11 @@ const postInputSchema = z.object({
   /** Bluesky access JWT (obtained from auth.login) */
   accessJwt: z.string().min(10),
   /** User's DID (Decentralized Identifier) */
-  did: z.string().min(1)
+  did: z.string().min(1),
+  /** User's Bluesky handle */
+  handle: z.string().min(1),
+  /** Bluesky refresh JWT (obtained from auth.login) */
+  refreshJwt: z.string().min(1),
 });
 
 /** Output schema for post creation */
@@ -44,13 +48,12 @@ const postOutputSchema = z.object({
   /** The AT Protocol URI of the created post (at://...) */
   uri: z.string(),
   /** Whether the thumbnail image was successfully uploaded */
-  thumbUploaded: z.boolean()
+  thumbUploaded: z.boolean(),
 });
 
 /** Realistic browser User-Agent for external requests */
 const realisticHeaders: Record<string, string> = {
-  "User-Agent":
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
 };
 
 /**
@@ -61,54 +64,50 @@ const realisticHeaders: Record<string, string> = {
  * @returns {Promise<T>} Promise that rejects if timeout exceeded
  * @throws {TRPCError} INTERNAL_SERVER_ERROR if timeout exceeded
  */
-const withTimeout = async <T,>(promise: Promise<T>, ms: number): Promise<T> => {
-  let timeoutId: NodeJS.Timeout;
+const withTimeout = async <T>(promise: Promise<T>, ms: number): Promise<T> => {
+  let timeoutId: NodeJS.Timeout | undefined;
   const timeoutPromise = new Promise<never>((_, reject) => {
     timeoutId = setTimeout(() => {
       reject(
         new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Request timed out"
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Request timed out',
         })
       );
     }, ms);
   });
 
   try {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error timeoutId is definitely assigned before use
     const result = await Promise.race([promise, timeoutPromise]);
-    clearTimeout(timeoutId);
+    if (timeoutId) clearTimeout(timeoutId);
     return result;
   } catch (err) {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error timeoutId is definitely assigned before use
-    clearTimeout(timeoutId);
+    if (timeoutId) clearTimeout(timeoutId);
     throw err;
   }
 };
 
 /**
  * Bluesky Post Creation Router
- * 
+ *
  * Provides procedures for creating posts with link embeds.
  * All procedures require the x-extension-secret header (protectedProcedure).
  */
 export const postRouter = router({
   /**
    * Create a Bluesky post with an embedded link card
-   * 
+   *
    * Uploads an image from the provided imageUrl and creates a post with:
    * - Text content
    * - External (link) embed with title, description, and image thumbnail
    * - Automatic fallback to text-only if image upload fails
-   * 
+   *
    * @procedure protectedProcedure (requires x-extension-secret header)
    * @param {PostCreateInput} input - Post and authentication details
    * @returns {PostCreateOutput} Created post URI and upload status
-   * 
+   *
    * @throws {TRPCError} INTERNAL_SERVER_ERROR if post creation fails
-   * 
+   *
    * @example
    * const result = await trpc.post.create.mutate({
    *   text: 'Check this out!',
@@ -119,12 +118,12 @@ export const postRouter = router({
    *   accessJwt: '...',
    *   did: 'did:plc:...'
    * });
-   * // Returns: { 
+   * // Returns: {
    * //   success: true,
    * //   uri: 'at://did:plc:.../app.bsky.feed.post/...',
    * //   thumbUploaded: true
    * // }
-   * 
+   *
    * @timeouts Image fetch (10s), post creation (10s)
    * @fallback If image upload fails, creates text-only post with thumbUploaded: false
    */
@@ -133,13 +132,16 @@ export const postRouter = router({
     .output(postOutputSchema)
     .mutation(async ({ input }) => {
       const env = getEnv();
-      const agent = new Agent(env.BLUESKY_SERVICE_URL);
+      const agent = new BskyAgent({ service: env.BLUESKY_SERVICE_URL });
 
       // Hydrate agent with existing session rather than logging in with password.
-      agent.session = {
+      await agent.resumeSession({
         accessJwt: input.accessJwt,
-        did: input.did
-      } as never;
+        did: input.did,
+        handle: input.handle,
+        refreshJwt: input.refreshJwt,
+        active: true,
+      });
 
       let blobRef: unknown | undefined;
       let thumbUploaded = false;
@@ -157,7 +159,7 @@ export const postRouter = router({
         const buffer = Buffer.from(await imgRes.arrayBuffer());
         const uploadRes = await withTimeout(
           agent.uploadBlob(buffer, {
-            encoding: "image/jpeg"
+            encoding: 'image/jpeg',
           } as never),
           10_000
         );
@@ -168,33 +170,36 @@ export const postRouter = router({
         thumbUploaded = true;
       } catch (error) {
         thumbUploaded = false;
-        log.warn("Thumbnail upload failed, falling back to no-thumb post", {
-          error: error instanceof Error ? error.stack || error.message : JSON.stringify(error),
-          imageUrl: input.imageUrl
+        log.warn('Thumbnail upload failed, falling back to no-thumb post', {
+          error:
+            error instanceof Error
+              ? error.stack || error.message
+              : JSON.stringify(error),
+          imageUrl: input.imageUrl,
         });
       }
 
       try {
         const record: Record<string, unknown> = {
-          $type: "app.bsky.feed.post",
+          $type: 'app.bsky.feed.post',
           text: input.text,
           createdAt: new Date().toISOString(),
           embed: {
-            $type: "app.bsky.embed.external",
+            $type: 'app.bsky.embed.external',
             external: {
               uri: input.url,
               title: input.title,
               description: input.description,
-              ...(thumbUploaded && blobRef ? { thumb: blobRef } : {})
-            }
-          }
+              ...(thumbUploaded && blobRef ? { thumb: blobRef } : {}),
+            },
+          },
         };
 
         const res = await withTimeout(
           agent.api.com.atproto.repo.createRecord({
             repo: input.did,
-            collection: "app.bsky.feed.post",
-            record
+            collection: 'app.bsky.feed.post',
+            record,
           } as never),
           10_000
         );
@@ -202,28 +207,31 @@ export const postRouter = router({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const uri = (res as any).uri as string | undefined;
         if (!uri) {
-          throw new Error("Missing URI from createRecord response");
+          throw new Error('Missing URI from createRecord response');
         }
 
         return {
           success: true,
           uri,
-          thumbUploaded
+          thumbUploaded,
         };
       } catch (error) {
-        log.error("Failed to create Bluesky post", {
-          error: error instanceof Error ? error.stack || error.message : JSON.stringify(error)
+        log.error('Failed to create Bluesky post', {
+          error:
+            error instanceof Error
+              ? error.stack || error.message
+              : JSON.stringify(error),
         });
         throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: error instanceof Error ? error.message : "Failed to create post"
+          code: 'INTERNAL_SERVER_ERROR',
+          message:
+            error instanceof Error ? error.message : 'Failed to create post',
         });
       }
-    })
+    }),
 });
 
 /** Type for post.create input parameters */
 export type PostCreateInput = z.infer<typeof postInputSchema>;
 /** Type for post.create output: success flag, URI, and image upload status */
 export type PostCreateOutput = z.infer<typeof postOutputSchema>;
-

@@ -1,7 +1,7 @@
-import { inferAsyncReturnType } from "@trpc/server";
-import { createCallerFactory } from "@trpc/server/adapters/node-http";
-import { appRouter } from "../router";
+// server/tests/testHelpers.ts
 
+import { createCallerFactory } from '@trpc/server';
+import { appRouter } from '../trpc/router';
 
 /**
  * Create a tRPC caller for testing
@@ -15,22 +15,23 @@ export interface TestContextOptions {
 
 export const createTestContext = (options: TestContextOptions = {}) => {
   const headers = new Headers({
-    "x-extension-secret": options.secret || process.env.EXTENSION_SHARED_SECRET || "test-secret"
+    'x-extension-secret':
+      options.secret || process.env.EXTENSION_SHARED_SECRET || 'test-secret',
   });
 
   if (options.origin) {
-    headers.set("origin", options.origin);
+    headers.set('origin', options.origin);
   }
 
   return {
     req: {
       headers,
-      ip: options.ip || "127.0.0.1"
-    } as any
+      ip: options.ip || '127.0.0.1',
+    } as any,
   };
 };
 
-export type TestContext = inferAsyncReturnType<typeof createTestContext>;
+export type TestContext = Awaited<ReturnType<typeof createTestContext>>;
 
 const createCaller = createCallerFactory(appRouter);
 

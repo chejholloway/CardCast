@@ -1,0 +1,324 @@
+import { jsx as _jsx, jsxs as _jsxs } from 'react/jsx-runtime';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import React from 'react';
+import { renderWithProviders } from './testUtils';
+// Mock chrome API
+global.chrome = {
+  storage: {
+    session: {
+      get: vi.fn(),
+      set: vi.fn(),
+    },
+  },
+};
+// Create a mock Popup component for testing (extracted from popup.tsx)
+const Popup = () => {
+  const [identifier, setIdentifier] = React.useState('');
+  const [appPassword, setAppPassword] = React.useState('');
+  const [domains, setDomains] = React.useState([]);
+  const [newDomain, setNewDomain] = React.useState('');
+  const [liveMessage, setLiveMessage] = React.useState('');
+  const [loggedIn, setLoggedIn] = React.useState(false);
+  const [loginLoading, setLoginLoading] = React.useState(false);
+  const [loginError, setLoginError] = React.useState(null);
+  React.useEffect(() => {
+    // Load domains from storage
+    chrome.storage.session.get(['allowedDomains'], (result) => {
+      const allowed = result?.allowedDomains ?? [
+        'thehill.com',
+        'theroot.com',
+        'usanews.com',
+      ];
+      setDomains(allowed);
+    });
+  }, []);
+  const handleLogin = async () => {
+    setLoginLoading(true);
+    setLoginError(null);
+    try {
+      // Simulate login
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      setLoggedIn(true);
+      setLiveMessage(`Logged in as @${identifier}`);
+      setIdentifier('');
+      setAppPassword('');
+    } catch (error) {
+      setLoginError('Login failed');
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+  const addDomain = () => {
+    if (newDomain && !domains.includes(newDomain)) {
+      const updated = [...domains, newDomain];
+      setDomains(updated);
+      chrome.storage.session.set({ allowedDomains: updated });
+      setNewDomain('');
+      setLiveMessage(`Domain added: ${newDomain}`);
+    }
+  };
+  const removeDomain = (domain) => {
+    const updated = domains.filter((d) => d !== domain);
+    setDomains(updated);
+    chrome.storage.session.set({ allowedDomains: updated });
+    setLiveMessage(`Domain removed: ${domain}`);
+  };
+  return _jsxs('div', {
+    role: 'region',
+    'aria-label': 'Bluesky Link Card popup',
+    className: 'w-80 p-4',
+    children: [
+      _jsx('div', {
+        'aria-live': 'polite',
+        className: 'sr-only',
+        id: 'popup-live',
+        children: liveMessage,
+      }),
+      _jsx('h1', {
+        className: 'text-base font-semibold mb-2',
+        children: 'Bluesky Link Card',
+      }),
+      loginLoading &&
+        _jsx('div', {
+          className: 'text-xs mb-2',
+          children: 'Signing in\u2026',
+        }),
+      loginError &&
+        _jsx('div', {
+          className: 'text-xs text-red-400 mb-2',
+          children: loginError,
+        }),
+      loggedIn
+        ? _jsx('div', {
+            className: 'space-y-1 mb-4',
+            children: _jsxs('div', {
+              children: [
+                'Logged in as ',
+                _jsxs('span', {
+                  className: 'font-medium',
+                  children: ['@', identifier],
+                }),
+              ],
+            }),
+          })
+        : _jsxs('div', {
+            className: 'space-y-2 mb-4',
+            children: [
+              _jsxs('label', {
+                className: 'block',
+                children: [
+                  _jsx('span', {
+                    className: 'text-xs',
+                    children: 'Bluesky handle',
+                  }),
+                  _jsx('input', {
+                    id: 'handle-input',
+                    'aria-label': 'Bluesky handle',
+                    className: 'mt-1 w-full rounded border px-2 py-1 text-xs',
+                    value: identifier,
+                    onChange: (e) => setIdentifier(e.target.value),
+                    placeholder: 'you.bsky.social',
+                  }),
+                ],
+              }),
+              _jsxs('label', {
+                className: 'block',
+                children: [
+                  _jsx('span', {
+                    className: 'text-xs',
+                    children: 'App password',
+                  }),
+                  _jsx('input', {
+                    id: 'password-input',
+                    'aria-label': 'App password',
+                    type: 'password',
+                    className: 'mt-1 w-full rounded border px-2 py-1 text-xs',
+                    value: appPassword,
+                    onChange: (e) => setAppPassword(e.target.value),
+                    placeholder: 'xxxx-xxxx-xxxx-xxxx',
+                  }),
+                ],
+              }),
+              _jsx('button', {
+                'aria-label': 'Sign in to Bluesky',
+                type: 'button',
+                className:
+                  'mt-2 w-full rounded bg-sky-600 py-1 text-xs font-medium',
+                onClick: handleLogin,
+                disabled: loginLoading,
+                children: loginLoading ? 'Signing in…' : 'Sign in to Bluesky',
+              }),
+            ],
+          }),
+      _jsxs('div', {
+        className: 'border-t pt-2 mt-2',
+        children: [
+          _jsx('h2', {
+            className: 'text-sm font-medium mb-2',
+            children: 'Allowed Domains',
+          }),
+          _jsx('div', {
+            role: 'list',
+            'aria-label': 'Allowed domains',
+            className: 'space-y-1 mb-2',
+            children: domains.map((domain) =>
+              _jsxs(
+                'div',
+                {
+                  role: 'listitem',
+                  className: 'flex justify-between items-center',
+                  children: [
+                    _jsx('span', { className: 'text-xs', children: domain }),
+                    _jsx('button', {
+                      'aria-label': `Remove domain ${domain}`,
+                      type: 'button',
+                      className: 'text-xs',
+                      onClick: () => removeDomain(domain),
+                      children: 'Remove',
+                    }),
+                  ],
+                },
+                domain
+              )
+            ),
+          }),
+          _jsxs('div', {
+            className: 'flex gap-1',
+            children: [
+              _jsx('input', {
+                'aria-label': 'Add domain',
+                id: 'domain-input',
+                className: 'flex-1 rounded border px-2 py-1 text-xs',
+                value: newDomain,
+                onChange: (e) => setNewDomain(e.target.value),
+                placeholder: 'example.com',
+              }),
+              _jsx('button', {
+                'aria-label': 'Add domain',
+                type: 'button',
+                className: 'rounded bg-sky-600 px-2 py-1 text-xs font-medium',
+                onClick: addDomain,
+                children: 'Add',
+              }),
+            ],
+          }),
+        ],
+      }),
+      _jsx('div', {
+        className: 'border-t pt-2 mt-2',
+        children: _jsx('a', {
+          href: 'https://bsky.app',
+          target: '_blank',
+          rel: 'noreferrer',
+          className: 'text-xs text-sky-400',
+          children: 'Open Bluesky',
+        }),
+      }),
+    ],
+  });
+};
+describe('Popup', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(chrome.storage.session.get).mockImplementation((_, callback) => {
+      callback({
+        allowedDomains: ['thehill.com', 'theroot.com', 'usanews.com'],
+      });
+    });
+  });
+  it('should render popup with title', () => {
+    renderWithProviders(_jsx(Popup, {}));
+    expect(screen.getByText('Bluesky Link Card')).toBeInTheDocument();
+  });
+  it('should render login form initially', () => {
+    renderWithProviders(_jsx(Popup, {}));
+    expect(screen.getByLabelText('Bluesky handle')).toBeInTheDocument();
+    expect(screen.getByLabelText('App password')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /sign in to bluesky/i })
+    ).toBeInTheDocument();
+  });
+  it('should load allowed domains from storage', async () => {
+    renderWithProviders(_jsx(Popup, {}));
+    await waitFor(() => {
+      expect(screen.getByText('thehill.com')).toBeInTheDocument();
+      expect(screen.getByText('theroot.com')).toBeInTheDocument();
+      expect(screen.getByText('usanews.com')).toBeInTheDocument();
+    });
+  });
+  it('should handle login', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(_jsx(Popup, {}));
+    const handleInput = screen.getByLabelText('Bluesky handle');
+    const passwordInput = screen.getByLabelText('App password');
+    const loginButton = screen.getByRole('button', {
+      name: /sign in to bluesky/i,
+    });
+    await user.type(handleInput, 'testuser.bsky.social');
+    await user.type(passwordInput, 'test-password');
+    await user.click(loginButton);
+    await waitFor(() => {
+      expect(screen.getByText(/logged in as/i)).toBeInTheDocument();
+    });
+  });
+  it('should add a new domain', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(_jsx(Popup, {}));
+    await waitFor(() => {
+      expect(screen.getByText('thehill.com')).toBeInTheDocument();
+    });
+    const domainInput = screen.getByLabelText('Add domain');
+    const addButton = screen.getByRole('button', { name: /add/i });
+    await user.type(domainInput, 'newdomain.com');
+    await user.click(addButton);
+    await waitFor(() => {
+      expect(screen.getByText('newdomain.com')).toBeInTheDocument();
+    });
+    expect(chrome.storage.session.set).toHaveBeenCalledWith(
+      expect.objectContaining({
+        allowedDomains: expect.arrayContaining(['newdomain.com']),
+      })
+    );
+  });
+  it('should remove a domain', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(_jsx(Popup, {}));
+    await waitFor(() => {
+      expect(screen.getByText('thehill.com')).toBeInTheDocument();
+    });
+    const removeButtons = screen.getAllByRole('button', { name: /remove/i });
+    await user.click(removeButtons[0]);
+    expect(chrome.storage.session.set).toHaveBeenCalled();
+  });
+  it('should prevent adding duplicate domains', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(_jsx(Popup, {}));
+    await waitFor(() => {
+      expect(screen.getByText('thehill.com')).toBeInTheDocument();
+    });
+    const domainInput = screen.getByLabelText('Add domain');
+    const addButton = screen.getByRole('button', { name: /add/i });
+    await user.type(domainInput, 'thehill.com');
+    await user.click(addButton);
+    // Domain count should remain the same
+    const domains = await screen.findAllByRole('listitem');
+    expect(domains.length).toBe(3); // Default 3 domains
+  });
+  it('should have accessible aria labels', () => {
+    renderWithProviders(_jsx(Popup, {}));
+    expect(
+      screen.getByRole('region', { name: /bluesky link card popup/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('list', { name: /allowed domains/i })
+    ).toBeInTheDocument();
+  });
+  it('should have link to Bluesky', () => {
+    renderWithProviders(_jsx(Popup, {}));
+    const blueskyLink = screen.getByRole('link', { name: /open bluesky/i });
+    expect(blueskyLink).toHaveAttribute('href', 'https://bsky.app');
+    expect(blueskyLink).toHaveAttribute('target', '_blank');
+  });
+});

@@ -1,9 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  experimental: {
-    appDir: true
-  },
   poweredByHeader: false,
   headers: async () => {
     return [
@@ -22,4 +19,3 @@ const nextConfig = {
 };
 
 export default nextConfig;
-
