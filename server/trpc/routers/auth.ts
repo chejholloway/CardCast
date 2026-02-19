@@ -1,3 +1,12 @@
+/**
+ * @fileoverview Authentication router for Bluesky login and session management.
+ * 
+ * This router handles user authentication via Bluesky credentials (handle + app password).
+ * The backend is stateless—sessions are stored client-side in the extension's chrome.storage.session.
+ * 
+ * @module server/trpc/routers/auth
+ */
+
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { Agent } from "@atproto/api";
@@ -5,23 +14,54 @@ import { protectedProcedure, router } from "../base";
 import { getEnv } from "../../env";
 import { log } from "../../log";
 
+/** Input schema for Bluesky login: handle/email and app password */
 const loginInputSchema = z.object({
+  /** Bluesky handle (e.g., 'user.bsky.social') or email address */
   identifier: z.string().min(1),
+  /** App-specific password (generated in Bluesky settings) */
   appPassword: z.string().min(1)
 });
 
+/** Session object returned after successful login */
 const sessionSchema = z.object({
+  /** User's Decentralized Identifier (DID) */
   did: z.string(),
+  /** JWT token for authenticated API requests to Bluesky */
   accessJwt: z.string(),
+  /** User's Bluesky handle */
   handle: z.string()
 });
 
+/** Response shape for the status endpoint */
 const statusOutputSchema = z.object({
+  /** Whether a session currently exists (always false in stateless backend) */
   loggedIn: z.boolean(),
+  /** Session object or null if not logged in */
   session: sessionSchema.nullable()
 });
 
+/**
+ * Authentication Router
+ * 
+ * Provides Bluesky login and session status endpoints.
+ * All procedures require the x-extension-secret header (protectedProcedure).
+ */
 export const authRouter = router({
+  /**
+   * Login to Bluesky with handle and app password
+   * 
+   * @procedure protectedProcedure (requires x-extension-secret header)
+   * @param {AuthLoginInput} input - Bluesky credentials
+   * @returns {AuthSession} Session object with DID, JWT, and handle
+   * @throws {TRPCError} UNAUTHORIZED if credentials are invalid
+   * 
+   * @example
+   * const session = await trpc.auth.login.mutate({
+   *   identifier: 'user.bsky.social',
+   *   appPassword: 'xxxx-xxxx-xxxx-xxxx'
+   * });
+   * // Returns: { did: 'did:plc:...', accessJwt: '...', handle: 'user.bsky.social' }
+   */
   login: protectedProcedure
     .input(loginInputSchema)
     .output(sessionSchema)
@@ -59,6 +99,21 @@ export const authRouter = router({
         handle
       };
     }),
+  /**
+   * Get current authentication status
+   * 
+   * This endpoint always returns `{ loggedIn: false, session: null }` because the backend
+   * is stateless. Session management is handled by the extension in chrome.storage.session.
+   * 
+   * This endpoint exists to provide a consistent API shape for the extension UI.
+   * 
+   * @procedure protectedProcedure (requires x-extension-secret header)
+   * @returns {Object} Status object (always has empty session)
+   * 
+   * @example
+   * const status = await trpc.auth.status.query();
+   * // Returns: { loggedIn: false, session: null }
+   */
   status: protectedProcedure.output(statusOutputSchema).query(() => {
     // Stateless backend: the extension is responsible for storing session.
     // This endpoint exists so the popup can show a consistent shape.
@@ -69,6 +124,8 @@ export const authRouter = router({
   })
 });
 
+/** Type for auth.login input parameters */
 export type AuthLoginInput = z.infer<typeof loginInputSchema>;
+/** Type for authenticated session object */
 export type AuthSession = z.infer<typeof sessionSchema>;
 

@@ -1,3 +1,17 @@
+/**
+ * @fileoverview Bluesky post creation router.
+ * 
+ * This router handles creating Bluesky posts with Open Graph link cards.
+ * It:
+ * - Accepts post text, URL, and OG metadata
+ * - Downloads and uploads the OG image as a blob to Bluesky
+ * - Creates an app.bsky.feed.post record with app.bsky.embed.external embed
+ * - Falls back to text-only posts if image upload fails
+ * - Includes 10-second timeouts for image fetch and post creation
+ * 
+ * @module server/trpc/routers/post
+ */
+
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { protectedProcedure, router } from "../base";
@@ -5,27 +19,48 @@ import { log } from "../../log";
 import { getEnv } from "../../env";
 import { Agent } from "@atproto/api";
 
+/** Input schema for post creation */
 const postInputSchema = z.object({
+  /** Post text content (1-3000 characters) */
   text: z.string().min(1).max(3000),
+  /** URL to embed in the post */
   url: z.string().url(),
+  /** Open Graph title for the link card */
   title: z.string().min(1).max(300),
+  /** Open Graph description for the link card */
   description: z.string().min(1).max(1000),
+  /** Open Graph image URL to download and attach */
   imageUrl: z.string().url(),
+  /** Bluesky access JWT (obtained from auth.login) */
   accessJwt: z.string().min(10),
+  /** User's DID (Decentralized Identifier) */
   did: z.string().min(1)
 });
 
+/** Output schema for post creation */
 const postOutputSchema = z.object({
+  /** Always true on success */
   success: z.literal(true),
+  /** The AT Protocol URI of the created post (at://...) */
   uri: z.string(),
+  /** Whether the thumbnail image was successfully uploaded */
   thumbUploaded: z.boolean()
 });
 
+/** Realistic browser User-Agent for external requests */
 const realisticHeaders: Record<string, string> = {
   "User-Agent":
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
 };
 
+/**
+ * Wrap a promise with a timeout
+ * @template T
+ * @param {Promise<T>} promise - Promise to wrap
+ * @param {number} ms - Timeout in milliseconds
+ * @returns {Promise<T>} Promise that rejects if timeout exceeded
+ * @throws {TRPCError} INTERNAL_SERVER_ERROR if timeout exceeded
+ */
 const withTimeout = async <T,>(promise: Promise<T>, ms: number): Promise<T> => {
   let timeoutId: NodeJS.Timeout;
   const timeoutPromise = new Promise<never>((_, reject) => {
@@ -53,7 +88,46 @@ const withTimeout = async <T,>(promise: Promise<T>, ms: number): Promise<T> => {
   }
 };
 
+/**
+ * Bluesky Post Creation Router
+ * 
+ * Provides procedures for creating posts with link embeds.
+ * All procedures require the x-extension-secret header (protectedProcedure).
+ */
 export const postRouter = router({
+  /**
+   * Create a Bluesky post with an embedded link card
+   * 
+   * Uploads an image from the provided imageUrl and creates a post with:
+   * - Text content
+   * - External (link) embed with title, description, and image thumbnail
+   * - Automatic fallback to text-only if image upload fails
+   * 
+   * @procedure protectedProcedure (requires x-extension-secret header)
+   * @param {PostCreateInput} input - Post and authentication details
+   * @returns {PostCreateOutput} Created post URI and upload status
+   * 
+   * @throws {TRPCError} INTERNAL_SERVER_ERROR if post creation fails
+   * 
+   * @example
+   * const result = await trpc.post.create.mutate({
+   *   text: 'Check this out!',
+   *   url: 'https://thehill.com/article',
+   *   title: 'Article Title',
+   *   description: 'Summary...',
+   *   imageUrl: 'https://...',
+   *   accessJwt: '...',
+   *   did: 'did:plc:...'
+   * });
+   * // Returns: { 
+   * //   success: true,
+   * //   uri: 'at://did:plc:.../app.bsky.feed.post/...',
+   * //   thumbUploaded: true
+   * // }
+   * 
+   * @timeouts Image fetch (10s), post creation (10s)
+   * @fallback If image upload fails, creates text-only post with thumbUploaded: false
+   */
   create: protectedProcedure
     .input(postInputSchema)
     .output(postOutputSchema)
@@ -148,6 +222,8 @@ export const postRouter = router({
     })
 });
 
+/** Type for post.create input parameters */
 export type PostCreateInput = z.infer<typeof postInputSchema>;
+/** Type for post.create output: success flag, URI, and image upload status */
 export type PostCreateOutput = z.infer<typeof postOutputSchema>;
 

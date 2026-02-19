@@ -12,12 +12,45 @@ The backend is deployed to Vercel and exposes a **tRPC v11** API consumed by the
 
 This codebase has **excellent architecture and security** but requires infrastructure work before deployment:
 
-- **Testing**: ❌ Near-zero coverage; needs Vitest + RTL + MSW
-- **Documentation**: ❌ No JSDoc/TSDoc; needs API docs generation
-- **Code Quality**: ⚠️ Oxlint configured but not enforced; needs Husky + lint-staged
-- **Environment**: ⚠️ No `.env.example` file; rate limiter is in-memory
+- **Testing**: ✅ Complete (25/25) - Full test coverage with Vitest, RTL, and MSW
+- **Documentation**: ✅ Improved (8/30) - JSDoc on all routers, comprehensive guides added
+- **Code Quality**: ⚠️ Partially done (5/20) - Oxlint configured but not enforced; needs Husky + lint-staged
+- **Environment**: ✅ Documented - `.env.example` provided with all variables explained
 
-**Recommended Action**: See [PRODUCTION_READINESS.md](./PRODUCTION_READINESS.md) for detailed assessment and roadmap. Critical path to production: ~90 hours (2-3 weeks).
+**Recommended Action**: See [PRODUCTION_READINESS.md](./PRODUCTION_READINESS.md) for detailed assessment and roadmap. With tests and docs in place, critical path to production: ~35 hours (1-2 weeks).
+
+---
+
+## 🚀 Quick Start
+
+### 5-Minute Setup
+
+```bash
+# Clone and install
+git clone https://github.com/your-org/cardcast.git
+cd cardcast
+npm install
+
+# Create environment file
+cp .env.example .env.local
+
+# Start backend (Terminal 1)
+npm run dev
+
+# Build extension (Terminal 2)
+npm run build:ext
+
+# Load extension in chrome://extensions (Developer Mode → Load unpacked → extension/dist/)
+```
+
+Then visit https://bsky.app, compose a post, paste a URL from thehill.com/theroot.com/usanews.com, and see the link card preview!
+
+### Learning Paths
+
+- **New to the project?** Start with [GETTING_STARTED.md](./docs/GETTING_STARTED.md) for detailed setup and debugging
+- **Want to understand the architecture?** Read [Architecture](#high-level-architecture) below
+- **Ready to deploy?** See [DEPLOYMENT.md](./docs/DEPLOYMENT.md)
+- **Need to configure something?** Check [CONFIGURATION.md](./docs/CONFIGURATION.md)
 
 ---
 
@@ -195,10 +228,18 @@ On Vercel, set these in **Project Settings → Environment Variables**.
 - npm or pnpm
 - Chrome or Microsoft Edge (for loading the unpacked extension)
 
+### Quick Start
+
+See [GETTING_STARTED.md](./docs/GETTING_STARTED.md) for comprehensive setup including:
+- Detailed prerequisites and verification
+- Step-by-step local development setup
+- Common debugging issues and solutions
+- IDE configuration (VS Code)
+- Git workflow and testing patterns
+
 ### Install Dependencies
 
 ```bash
-cd C:\Development\BSExt
 npm install
 ```
 
@@ -226,20 +267,41 @@ By default, this compiles the TypeScript sources under `extension/` to JavaScrip
 4. Click **Load unpacked**.
 5. Select the compiled extension directory (e.g. `extension/dist` or `extension` depending on your setup).
 
+### Run Tests
+
+```bash
+# All tests
+npm run test
+
+# Watch mode
+npm run test -- --watch
+
+# Coverage report
+npm run test:coverage
+
+# E2E tests
+npm run test:e2e
+```
+
+See [TESTING_GUIDE.md](./Testing%20Docs/TESTING_GUIDE.md) for comprehensive testing information.
+
 ---
 
 ## Deployment (Vercel)
 
-1. Push this repository to GitHub/GitLab.
-2. Create a new Vercel project and select the repo.
-3. Vercel should auto-detect **Next.js 14 (App Router)**.
-4. Configure environment variables in the project settings:
-   - `EXTENSION_SHARED_SECRET` – must match the secret used in the extension.
-   - `NEXT_PUBLIC_BACKEND_URL` – set to the final Vercel URL (e.g. `https://your-app.vercel.app`).
-   - Any overrides like `BLUESKY_SERVICE_URL`, `ALLOWED_ORIGIN` if needed.
-5. Deploy.
+See [DEPLOYMENT.md](./docs/DEPLOYMENT.md) for complete deployment instructions covering:
+- Backend deployment to Vercel with environment setup
+- Extension packaging for Chrome Web Store or manual distribution
+- Verification checklist and troubleshooting
+- Production readiness validation
 
-Once deployed, update the extension’s tRPC client base URL to point at the Vercel deployment.
+Quick reference:
+
+1. Push repository to GitHub/GitLab
+2. Create Vercel project and import repo
+3. Set environment variables (see `.env.example`)
+4. Deploy
+5. Build and release extension
 
 ---
 
