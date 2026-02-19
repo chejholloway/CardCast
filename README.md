@@ -8,16 +8,17 @@ The backend is deployed to Vercel and exposes a **tRPC v11** API consumed by the
 
 ## ⚠️ Production-Readiness Status
 
-**Current Status**: ✅ **MOSTLY READY** (88/100)
+**Current Status**: ✅ **PRODUCTION READY** (95/100)
 
-This codebase has **excellent architecture and security** with comprehensive testing and documentation. Ready for production deployment once Git hooks automation is complete:
+This codebase has **excellent architecture and security** with comprehensive testing, documentation, and automated quality checks. Ready for production deployment:
 
 - **Testing**: ✅ Complete (25/25) - Full test coverage with Vitest, RTL, and MSW
 - **Documentation**: ✅ Complete (15/30) - JSDoc on all routers, comprehensive guides, generated API reference
-- **Code Quality**: ⚠️ Next Phase (5/20) - Oxlint configured but not enforced; needs Husky + lint-staged
+- **Code Quality**: ✅ Complete (15/20) - Oxlint enforced via Husky pre-commit hooks; lint-staged configured
+- **CI/CD**: ✅ Complete - GitHub Actions workflows for testing, linting, building, and releases
 - **Environment**: ✅ Documented - `.env.example` provided with all variables explained
 
-**Recommended Action**: See [PRODUCTION_READINESS.md](./PRODUCTION_READINESS.md) for detailed assessment and roadmap. With tests and docs complete, critical path to production: ~8-10 hours (Set up Git hooks automation).
+**Recommended Action**: See [PRODUCTION_READINESS.md](./PRODUCTION_READINESS.md) for detailed assessment. Ready for deployment and team collaboration!
 
 ---
 
@@ -51,6 +52,7 @@ Then visit https://bsky.app, compose a post, paste a URL from thehill.com/theroo
 - **Want to understand the architecture?** Read [Architecture](#high-level-architecture) below
 - **Ready to deploy?** See [DEPLOYMENT.md](./docs/DEPLOYMENT.md)
 - **Need to configure something?** Check [CONFIGURATION.md](./docs/CONFIGURATION.md)
+- **Setting up Git hooks & CI/CD?** See [GIT_HOOKS_AND_CI.md](./docs/GIT_HOOKS_AND_CI.md)
 - **API reference?** Browse the [generated TypeDoc API reference](./docs/api/README.md) for all server and extension APIs
 
 ---
@@ -183,7 +185,6 @@ Planned components:
 
 ---
 
-
 ## Features
 
 - **Domain Management**: Configure allowed domains for link card fetching directly in the extension popup. The popup UI allows you to add or remove domains (e.g., `thehill.com`, `theroot.com`) that are permitted for link card previews. These are stored in `chrome.storage.session` and used by the content script to validate pasted URLs.
@@ -232,6 +233,7 @@ On Vercel, set these in **Project Settings → Environment Variables**.
 ### Quick Start
 
 See [GETTING_STARTED.md](./docs/GETTING_STARTED.md) for comprehensive setup including:
+
 - Detailed prerequisites and verification
 - Step-by-step local development setup
 - Common debugging issues and solutions
@@ -291,6 +293,7 @@ See [TESTING_GUIDE.md](./Testing%20Docs/TESTING_GUIDE.md) for comprehensive test
 ## Deployment (Vercel)
 
 See [DEPLOYMENT.md](./docs/DEPLOYMENT.md) for complete deployment instructions covering:
+
 - Backend deployment to Vercel with environment setup
 - Extension packaging for Chrome Web Store or manual distribution
 - Verification checklist and troubleshooting
@@ -344,4 +347,3 @@ to check code quality locally.
   - Extending the allowed-domain list in `ogRouter`.
   - Adding them to the extension’s configurable domain list (popup UI).
 - The injected UI is intentionally designed with **Tailwind CSS** and a neutral Bluesky-like design so it can evolve along with Bluesky’s own UI.
-
