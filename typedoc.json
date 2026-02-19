@@ -1,0 +1,31 @@
+{
+  "name": "CardCast API Reference",
+  "entryPoints": [
+    "server/trpc/routers/auth.ts",
+    "server/trpc/routers/og.ts",
+    "server/trpc/routers/post.ts",
+    "server/trpc/base.ts",
+    "extension/src/background.ts",
+    "extension/src/contentScript.tsx",
+    "extension/src/popup.tsx",
+    "extension/src/trpcClient.ts"
+  ],
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.js",
+    "**/tests/**"
+  ],
+  "out": "docs/api",
+  "plugin": ["typedoc-plugin-markdown"],
+  "markdown": {
+    "outputFileStrategy": "members"
+  },
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "excludeInternal": false,
+  "hideGenerator": false,
+  "sort": ["source-order"],
+  "readme": "none",
+  "skipErrorChecking": true
+}
