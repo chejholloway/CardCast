@@ -1,9 +1,30 @@
+/**
+ * Content script injected into bsky.app DOM
+ * 
+ * Detects URLs in the Bluesky composer and injects a link card preview component.
+ * Uses mutation observers to watch for URL changes and mounts the LinkCardComposer
+ * when a supported domain URL is detected.
+ * 
+ * Features:
+ * - Real-time theme detection (dark/light mode)
+ * - Metadata fetching with loading/error states
+ * - Post creation with rich link embeds
+ * - Domain whitelisting with configurable allowed list
+ * 
+ * @module contentScript
+ * @requires React, react-dom, QueryClient, tRPC, framer-motion
+ */
+
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { trpc, trpcClient } from "./trpcClient";
 import { motion } from "framer-motion";
 
+/**
+ * Shared React Query client for the content script
+ * Configured with automatic retries (2 for queries) and exponential backoff
+ */
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -13,8 +34,19 @@ const queryClient = new QueryClient({
   }
 });
 
-// (trpcClient is re-exported with trpc for provider usage)
-
+/**
+ * TRPC provider component - wraps children with QueryClientProvider and tRPC context
+ * 
+ * @component
+ * @param {Object} props - Component props
+ * @param {React.ReactNode} props.children - Child components to wrap
+ * @returns {React.ReactElement} Provider-wrapped children
+ * 
+ * @example
+ * <TRPCProvider>
+ *   <LinkCardComposer url="https://thehill.com/article" />
+ * </TRPCProvider>
+ */
 const TRPCProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <QueryClientProvider client={queryClient}>
     <trpc.Provider client={trpcClient} queryClient={queryClient}>
@@ -23,6 +55,21 @@ const TRPCProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   </QueryClientProvider>
 );
 
+/**
+ * Validates if a URL belongs to the allowed domains list
+ * 
+ * @param {string} value - URL string to validate
+ * @param {string[]} domains - List of allowed domain hostnames (e.g., ["thehill.com"])
+ * @returns {boolean} True if URL hostname matches an allowed domain, false otherwise
+ * 
+ * @example
+ * isSupportedUrl("https://thehill.com/article", ["thehill.com", "theroot.com"])
+ * // Returns: true
+ * 
+ * @example
+ * isSupportedUrl("not-a-url", ["thehill.com"])
+ * // Returns: false (catches URL parsing error)
+ */
 const isSupportedUrl = (value: string, domains: string[]): boolean => {
   try {
     const url = new URL(value);
@@ -33,6 +80,25 @@ const isSupportedUrl = (value: string, domains: string[]): boolean => {
 };
 
 
+/**
+ * Link card preview component - displays Open Graph metadata with preview image
+ * 
+ * Features:
+ * - Fetches metadata on demand via tRPC (not on mount)
+ * - Displays loading/error/success states
+ * - Supports light and dark theme detection
+ * - Creates posts with embedded link cards to Bluesky
+ * - Smooth animations with framer-motion
+ * - Full keyboard and screen reader accessibility
+ * 
+ * @component
+ * @param {Object} props - Component props
+ * @param {string} props.url - URL to fetch metadata and embed
+ * @returns {React.ReactElement} Card preview UI with fetch and post buttons
+ * 
+ * @example
+ * <LinkCardComposer url="https://thehill.com/article-123" />
+ */
 const LinkCardComposer: React.FC<{ url: string }> = ({ url }) => {
   const [isDark, setIsDark] = useState(true); // Default to dark
   const { data, error, isLoading, refetch } = trpc.og.fetch.useQuery({ url }, { enabled: false });
@@ -183,6 +249,22 @@ const LinkCardComposer: React.FC<{ url: string }> = ({ url }) => {
   );
 };
 
+/**
+ * Mounts the LinkCardComposer into the Bluesky compose box
+ * 
+ * Creates a root container in the compose element if not already mounted,
+ * then renders the LinkCardComposer with tRPC provider.
+ * 
+ * Idempotent - safely called multiple times without duplicate mounts.
+ * 
+ * @param {HTMLElement} composeEl - The compose text input element (role="textbox")
+ * @param {string} url - URL to preview and embed in posts
+ * @returns {void}
+ * 
+ * @example
+ * const compose = document.querySelector('div[role="textbox"]');
+ * mountComposer(compose, "https://thehill.com/article");
+ */
 const mountComposer = (composeEl: HTMLElement, url: string) => {
   if (composeEl.querySelector(".bsext-root")) return;
 
@@ -198,6 +280,25 @@ const mountComposer = (composeEl: HTMLElement, url: string) => {
   );
 };
 
+/**
+ * Detects the compose box and monitors it for URL changes
+ * 
+ * Sets up a mutation observer to watch the compose textbox for URL patterns.
+ * When a URL is detected that belongs to an allowed domain, automatically
+ * mounts the LinkCardComposer component.
+ * 
+ * Loads the allowed domains list from chrome.storage.session, defaulting to
+ * built-in list if not configured: ["thehill.com", "theroot.com", "usanews.com"]
+ * 
+ * @async
+ * @returns {Promise<void>}
+ * 
+ * @example
+ * // Call on page load
+ * window.addEventListener("load", () => {
+ *   detectAndMount();
+ * });
+ */
 const detectAndMount = async () => {
   const compose = document.querySelector<HTMLElement>('div[role="textbox"]');
   if (!compose) return;
@@ -225,9 +326,16 @@ const detectAndMount = async () => {
   });
 };
 
+/**
+ * Initialize the content script on page load if running on Bluesky
+ * 
+ * Only initializes on bsky.app to avoid unnecessary setup on other sites.
+ * Waits for window load event to ensure DOM is ready before starting detection.
+ */
 if (window.location.hostname === "bsky.app") {
   window.addEventListener("load", () => {
     detectAndMount();
   });
 }
+
 

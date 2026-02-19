@@ -1,9 +1,28 @@
+/**
+ * Extension popup UI for managing authentication and allowed domains
+ * 
+ * Provides a user-friendly interface for:
+ * - Bluesky login/logout with handle and app passwords
+ * - Managing whitelist of allowed domains for card creation
+ * - Current authentication status display
+ * 
+ * Persists authentication state in chrome.storage.session and domain list
+ * in chrome.storage.session.
+ * 
+ * @module popup
+ * @requires React, react-dom, QueryClient, tRPC
+ */
+
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { trpc, trpcClient } from "./trpcClient";
 
+/**
+ * Shared React Query client for the popup
+ * Configured with automatic retries (2 for queries) and exponential backoff
+ */
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -14,6 +33,19 @@ const queryClient = new QueryClient({
 });
 
 
+/**
+ * TRPC provider component - wraps children with QueryClientProvider and tRPC context
+ * 
+ * @component
+ * @param {Object} props - Component props
+ * @param {React.ReactNode} props.children - Child components to wrap
+ * @returns {React.ReactElement} Provider-wrapped children
+ * 
+ * @example
+ * <TRPCProvider>
+ *   <Popup />
+ * </TRPCProvider>
+ */
 const TRPCProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <QueryClientProvider client={queryClient}>
     <trpc.Provider client={trpcClient} queryClient={queryClient}>
@@ -22,6 +54,32 @@ const TRPCProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   </QueryClientProvider>
 );
 
+/**
+ * Main popup UI component
+ * 
+ * Features:
+ * - Login/logout form with Bluesky credentials
+ * - Real-time auth status queries with tRPC
+ * - Add/remove allowed domains for link card creation
+ * - ARIA labels and live regions for screen reader accessibility
+ * - Persistent domain storage in chrome.storage.session
+ * - Error display for failed authentication attempts
+ * 
+ * @component
+ * @returns {React.ReactElement} Popup UI with auth form and domain management
+ * 
+ * @example
+ * // Rendered in popup.html via JavaScript
+ * <TRPCProvider>
+ *   <Popup />
+ * </TRPCProvider>
+ * 
+ * Features:
+ * - Login with Bluesky handle (e.g., "user.bsky.social") and app password
+ * - View current login status
+ * - Add new allowed domains (e.g., "thehill.com")
+ * - Remove existing domains from whitelist
+ */
 const Popup: React.FC = () => {
   const [identifier, setIdentifier] = useState("");
   const [appPassword, setAppPassword] = useState("");
@@ -47,6 +105,10 @@ const Popup: React.FC = () => {
     }
   }, [loginMutation.isPending, authStatus]);
 
+  /**
+   * Load allowed domains from chrome.storage.session on component mount
+   * Defaults to ["thehill.com", "theroot.com", "usanews.com"] if not set
+   */
   useEffect(() => {
     // Load domains
     chrome.storage.session.get(["allowedDomains"], (result) => {
@@ -58,10 +120,17 @@ const Popup: React.FC = () => {
     });
   }, []);
 
+  /**
+   * Attempts login with provided identifier and app password via tRPC
+   */
   const onLogin = () => {
     loginMutation.mutate({ identifier, appPassword });
   };
 
+  /**
+   * Adds new domain to allowed list and persists to chrome.storage.session
+   * No-op if domain already exists
+   */
   const addDomain = () => {
     if (newDomain && !domains.includes(newDomain)) {
       const updated = [...domains, newDomain];
@@ -72,6 +141,9 @@ const Popup: React.FC = () => {
     }
   };
 
+  /**
+   * Removes domain from allowed list and persists to chrome.storage.session
+   */
   const removeDomain = (domain: string) => {
     const updated = domains.filter(d => d !== domain);
     setDomains(updated);
@@ -190,6 +262,14 @@ const Popup: React.FC = () => {
   );
 };
 
+/**
+ * Mounts the Popup component into the DOM root element
+ * 
+ * Called on popup.html script load to initialize the popup UI.
+ * Safely no-ops if root element is not found.
+ * 
+ * @returns {void}
+ */
 const mountPopup = () => {
   const container = document.getElementById("root");
   if (!container) return;
@@ -201,5 +281,8 @@ const mountPopup = () => {
   );
 };
 
+/**
+ * Initialize popup UI on script load
+ */
 mountPopup();
 
