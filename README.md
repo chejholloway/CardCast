@@ -6,6 +6,21 @@ The backend is deployed to Vercel and exposes a **tRPC v11** API consumed by the
 
 ---
 
+## ⚠️ Production-Readiness Status
+
+**Current Status**: ⚠️ **NOT PRODUCTION-READY** (45/100)
+
+This codebase has **excellent architecture and security** but requires infrastructure work before deployment:
+
+- **Testing**: ❌ Near-zero coverage; needs Vitest + RTL + MSW
+- **Documentation**: ❌ No JSDoc/TSDoc; needs API docs generation
+- **Code Quality**: ⚠️ Oxlint configured but not enforced; needs Husky + lint-staged
+- **Environment**: ⚠️ No `.env.example` file; rate limiter is in-memory
+
+**Recommended Action**: See [PRODUCTION_READINESS.md](./PRODUCTION_READINESS.md) for detailed assessment and roadmap. Critical path to production: ~90 hours (2-3 weeks).
+
+---
+
 ## High-Level Architecture
 
 - **Browser Extension (Manifest V3)**

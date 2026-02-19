@@ -13,6 +13,10 @@
     "build:css": "tailwindcss -c tailwind.config.cjs -i ./styles/globals.css -o ./public/tailwind.css --minify",
     "lint:accessibility": "eslint extension --ext .ts,.tsx,.js,.jsx",
     "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
+    "test:e2e": "vitest run --config vitest.e2e.config.ts",
     "ci-lite": "npm ci && npm run lint && npm run lint:accessibility && npm run typecheck && npm run build:ext && npm run build:css"
   },
   "dependencies": {
@@ -29,18 +33,26 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.1.5",
+    "@testing-library/react": "^14.1.2",
+    "@testing-library/user-event": "^14.5.1",
     "@types/chrome": "^0.1.36",
     "@types/node": "25.3.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "@vitest/ui": "^1.1.0",
+    "eslint": "^8.56.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint-plugin-jsx-a11y": "^6.6.0",
+    "eslint-plugin-react": "^7.31.0",
+    "jsdom": "^23.0.1",
+    "msw": "^2.0.11",
     "postcss": "^8.4.38",
     "prettier": "^3.2.5",
+    "puppeteer": "^21.6.1",
     "tailwindcss": "^3.4.3",
     "typescript": "^5.4.2",
-    "eslint": "^8.56.0",
-    "@typescript-eslint/parser": "^5.64.0",
-    "@typescript-eslint/eslint-plugin": "^5.64.0",
-    "eslint-plugin-jsx-a11y": "^6.6.0",
-    "eslint-plugin-react": "^7.31.0"
+    "vitest": "^1.1.0"
   }
 }

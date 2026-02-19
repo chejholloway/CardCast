@@ -38,3 +38,10 @@ extension/dist/
 # VS Code
 .vscode/settings.json
 package-lock.json
+
+# Documentation & Assessment
+PRODUCTION_READINESS.md
+.env.example
+TESTING_IMPLEMENTATION.md
+BEFORE_AND_AFTER.md
+/Testing Docs
