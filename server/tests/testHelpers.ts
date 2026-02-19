@@ -1,6 +1,5 @@
 // server/tests/testHelpers.ts
 
-import { createCallerFactory } from '@trpc/server';
 import { appRouter } from '../trpc/router';
 
 /**
@@ -33,7 +32,27 @@ export const createTestContext = (options: TestContextOptions = {}) => {
 
 export type TestContext = Awaited<ReturnType<typeof createTestContext>>;
 
-const createCaller = createCallerFactory(appRouter);
+// Compatibility shim for TRPC versions
+let createCaller: (ctx: any) => any;
+try {
+  // @ts-ignore - dynamic check for compatibility with different TRPC versions
+  const mod = require('@trpc/server');
+  // If a factory exists in this version, use it
+  if (typeof mod?.createCallerFactory === 'function') {
+    createCaller = mod.createCallerFactory(appRouter);
+  } else {
+    throw new Error('createCallerFactory not available');
+  }
+} catch {
+  // Fallback: provide a dummy caller that will throw if used
+  createCaller = (_ctx: any) => {
+    return () => {
+      throw new Error(
+        'TRPC test caller is not available in this environment. Update TRPC version or testHelpers.ts.'
+      );
+    };
+  };
+}
 
 /**
  * Create a test caller with a given context
