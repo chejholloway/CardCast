@@ -1,0 +1,32 @@
+name: CI - Multi-Dir
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Install root dependencies
+        run: npm ci
+      - name: Run lint (oxlint)
+        run: npm run lint
+      - name: Run accessibility lint (ESLint)
+        run: npm run lint:accessibility
+      - name: TypeScript checks (root)
+        run: npm run typecheck
+      - name: Build extension TS
+        run: npm run build:ext
+      - name: Build Tailwind CSS
+        run: npm run build:css
+      - name: TypeScript check extension
+        run: npx tsc -p extension/tsconfig.json
+      - name: Verify completion
+        run: echo "CI suite completed"
