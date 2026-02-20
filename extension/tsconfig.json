@@ -6,6 +6,8 @@
     "moduleResolution": "bundler",
     "strict": true,
     "noEmit": false,
+    "outDir": "./dist",
+    "rootDir": "./src",
     "jsx": "react-jsx",
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -17,6 +19,6 @@
       "@/*": ["./*"]
     }
   },
-  "include": ["src", "tests"]
+  "include": ["src"],
+  "exclude": ["tests", "node_modules", "dist"]
 }
-

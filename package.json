@@ -11,7 +11,7 @@
     "start": "next start",
     "lint": "npx oxlint .",
     "lint:staged": "npx lint-staged",
-    "build:ext": "tsc -p extension/tsconfig.json",
+    "build:ext": "node extension/scripts/generate-config.js && tsc -p extension/tsconfig.json",
     "build:css": "tailwindcss -c tailwind.config.cjs -i ./styles/globals.css -o ./public/tailwind.css --minify",
     "lint:accessibility": "eslint extension --ext .ts,.tsx,.js,.jsx",
     "typecheck": "tsc -p tsconfig.json",

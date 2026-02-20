@@ -14,14 +14,7 @@
 import { createTRPCReact } from '@trpc/react-query';
 import { createTRPCClient, httpBatchLink } from '@trpc/client';
 import type { AppRouter } from '../../server/trpc/router';
-
-/** Backend URL from environment or default */
-const BACKEND_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL ?? 'https://your-backend-url.vercel.app';
-
-/** Shared secret for authenticating all requests (passed in x-extension-secret header) */
-const EXTENSION_SHARED_SECRET =
-  process.env.EXTENSION_SHARED_SECRET ?? 'REPLACE_WITH_REAL_SECRET';
+import { BACKEND_URL, EXTENSION_SHARED_SECRET } from './config';
 
 /**
  * tRPC React client instance
