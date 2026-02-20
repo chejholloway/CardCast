@@ -41,6 +41,24 @@ const EXTENSION_SHARED_SECRET =
   (process.env.EXTENSION_SHARED_SECRET || '').trim() ||
   'REPLACE_WITH_REAL_SECRET';
 
+// List of assets to ensure present in both dist outputs (src and legacy)
+const assets = [
+  'background.js',
+  'contentScript.js',
+  'popup.js',
+  'popup.html',
+  'manifest.json',
+  'config.js',
+  'trpcClient.js',
+  'types.js',
+  path.join('icons', 'icon-16.png'),
+  path.join('icons', 'icon-32.png'),
+  path.join('icons', 'icon-48.png'),
+  path.join('icons', 'icon-128.png'),
+  path.join('icons', 'icon-256.png'),
+  path.join('icons', 'icon-512.png'),
+];
+
 // Generate config file content
 const configContent = `/**
  * @fileoverview Extension configuration generated from environment variables.
@@ -94,30 +112,70 @@ try {
     }
   };
 
-  // Copy manifest to both destinations
-  const manifestSrc = path.join(__dirname, '..', 'manifest.json');
-  copyTo(manifestSrc, path.join(destRootSrc, 'manifest.json'));
-  copyTo(manifestSrc, path.join(destRootLegacy, 'manifest.json'));
+  // Copy an asset from the most relevant build location to both destinations
+  const copyAssetToDests = (relPath) => {
+    const candidates = [
+      path.join(__dirname, '..', '..', 'src', 'extension', 'dist', relPath),
+      path.join(__dirname, '..', '..', 'extension', 'dist', relPath),
+      path.join(__dirname, '..', relPath),
+    ];
+    for (const src of candidates) {
+      if (fs.existsSync(src)) {
+        const dstSrc = path.join(destRootSrc, relPath);
+        const dstLegacy = path.join(destRootLegacy, relPath);
+        ensureDir(path.dirname(dstSrc));
+        ensureDir(path.dirname(dstLegacy));
+        fs.copyFileSync(src, dstSrc);
+        fs.copyFileSync(src, dstLegacy);
+        return;
+      }
+    }
+    console.warn(`Asset missing in all candidates: ${relPath}`);
+  };
+
+  // Copy manifest to both destinations (via asset resolver)
+  copyAssetToDests('manifest.json');
 
   // Copy icons to both destinations
   const iconsSrcDir = path.join(__dirname, '..', 'icons');
   if (fs.existsSync(iconsSrcDir)) {
     fs.readdirSync(iconsSrcDir).forEach((fname) => {
-      const s = path.join(iconsSrcDir, fname);
-      copyTo(s, path.join(destRootSrc, 'icons', fname));
-      copyTo(s, path.join(destRootLegacy, 'icons', fname));
+      const rel = path.join('icons', fname);
+      copyAssetToDests(rel);
     });
   }
 
+  // Copy all remaining assets to both destinations, ensuring background.js,
+  // contentScript.js, popup.js, etc. are present in both output dirs.
+  assets.forEach((rel) => {
+    copyAssetToDests(rel);
+  });
+
   // Copy popup.html to both destinations
-  const popupSrc = path.join(__dirname, '..', 'src', 'popup.html');
-  if (fs.existsSync(popupSrc)) {
-    copyTo(popupSrc, path.join(destRootSrc, 'popup.html'));
-    copyTo(popupSrc, path.join(destRootLegacy, 'popup.html'));
-  } else {
-    const minimal = `<!doctype html><html><head><meta charset="utf-8"><title>Popup</title></head><body><script type="module" src="popup.js"></script></body></html>`;
-    copyTo(Buffer.from(minimal), path.join(destRootSrc, 'popup.html'));
-    copyTo(Buffer.from(minimal), path.join(destRootLegacy, 'popup.html'));
+  const popupSrcPrimary = path.join(__dirname, '..', 'src', 'popup.html');
+  const popupSrcFallback = path.join(
+    __dirname,
+    '..',
+    'extension',
+    'src',
+    'popup.html'
+  );
+  const popupSrcList = [popupSrcPrimary, popupSrcFallback];
+  let copiedPopup = false;
+  for (const p of popupSrcList) {
+    if (fs.existsSync(p)) {
+      copyTo(p, path.join(destRootSrc, 'popup.html'));
+      copyTo(p, path.join(destRootLegacy, 'popup.html'));
+      copiedPopup = true;
+      break;
+    }
+  }
+  if (!copiedPopup) {
+    const minimal = `<!doctype html><html><head><meta charset=\\"utf-8\\"><title>Popup</title></head><body><script type=\\"module\\" src=\\"popup.js\\"></script></body></html>`;
+    const popupDestSrc = path.join(destRootSrc, 'popup.html');
+    const popupDestLegacy = path.join(destRootLegacy, 'popup.html');
+    fs.writeFileSync(popupDestSrc, minimal, 'utf8');
+    fs.writeFileSync(popupDestLegacy, minimal, 'utf8');
   }
 } catch (err) {
   console.warn('⚠️  Extension build asset copy failed:', err);
