@@ -40,7 +40,7 @@ function parseArgs() {
     const endpoint =
       args.endpoint ||
       process.env.BSKY_API_ENDPOINT ||
-      'https://api.bsky.app/xrpc/app.bsky.actor.getProfiles';
+      'https://api.bsky.app/xrpc/app.bsky.actor.getProfile';
 
     if (!did) {
       console.error('Error: Missing DID. Provide with --did or BSKY_DID');
@@ -52,7 +52,7 @@ function parseArgs() {
       );
     }
 
-    const body = JSON.stringify({ actors: [did] });
+    const body = JSON.stringify({ actor: did });
     const headers = {
       'Content-Type': 'application/json',
     };

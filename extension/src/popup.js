@@ -88,6 +88,17 @@ const Popup = () => {
   const loginMutation = trpc.auth.login.useMutation({
     onSuccess: () => refetchAuth(),
   });
+  // Debugging: profile getProfile mutation and debug state
+  const profileMutation = trpc.profile?.getProfile?.useMutation({
+    onSuccess: (data) => {
+      setProfileDebug({
+        endpoint: 'https://bsky.app/xrpc/app.bsky.actor.getProfile',
+        actor: authStatus?.session?.did ?? '',
+        status: 200,
+        responsePreview: JSON.stringify(data, null, 2).slice(0, 1000),
+      });
+    },
+  });
   // Accessibility live messages
   useEffect(() => {
     if (loginMutation.isPending) {
@@ -118,6 +129,18 @@ const Popup = () => {
    */
   const onLogin = () => {
     loginMutation.mutate({ identifier, appPassword });
+  };
+  const canFetchProfile =
+    loggedIn &&
+    Boolean(authStatus?.session?.did) &&
+    Boolean(authStatus?.session?.accessJwt);
+  const fetchProfile = () => {
+    if (!canFetchProfile) return;
+    // Use the current DID and accessJwt from the session
+    profileMutation.mutate({
+      actor: authStatus.session.did,
+      accessJwt: authStatus.session.accessJwt,
+    });
   };
   /**
    * Adds new domain to allowed list and persists to chrome.storage.session
@@ -241,6 +264,16 @@ const Popup = () => {
                   ? 'Signing in…'
                   : 'Sign in to Bluesky',
               }),
+              // Debug: fetch profile button
+              loggedIn &&
+                _jsx('button', {
+                  'aria-label': 'Fetch Bluesky Profile',
+                  type: 'button',
+                  className:
+                    'mt-2 w-full rounded bg-green-600 py-1 text-xs font-medium hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-green-500',
+                  onClick: fetchProfile,
+                  children: 'Fetch Bluesky Profile',
+                }),
             ],
           }),
       _jsxs('div', {
@@ -310,6 +343,23 @@ const Popup = () => {
           children: 'Open Bluesky',
         }),
       }),
+      // Debug UI: show last profile payload for troubleshooting
+      profileDebug
+        ? _jsxs('div', {
+            className: 'border-t border-slate-800 pt-2 mt-2',
+            children: [
+              _jsx('div', {
+                className: 'text-xs text-slate-300',
+                children: 'Profile Debug',
+              }),
+              _jsx('pre', {
+                className: 'bg-slate-900 text-xs text-slate-100 p-2 rounded',
+                style: { maxHeight: '180px', overflow: 'auto' },
+                children: JSON.stringify(profileDebug, null, 2),
+              }),
+            ],
+          })
+        : null,
     ],
   });
 };

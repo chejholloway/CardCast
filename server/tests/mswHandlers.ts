@@ -100,6 +100,32 @@ export const handlers = [
     }
   ),
 
+  // Mock Bluesky getProfile (single actor)
+  http.post('https://bsky.app/xrpc/app.bsky.actor.getProfile', async () => {
+    return HttpResponse.json({
+      result: {
+        data: {
+          did: 'did:plc:test123',
+          handle: 'testuser.bsky.social',
+          displayName: 'Test User',
+        },
+      },
+    });
+  }),
+
+  // Mock tRPC profile.getProfile (internal to backend) - not required for endpoint, but helpful in tests
+  http.post('http://localhost:3000/api/trpc/profile.getProfile', async () => {
+    return HttpResponse.json({
+      result: {
+        data: {
+          did: 'did:plc:test123',
+          handle: 'testuser.bsky.social',
+          displayName: 'Test User',
+        },
+      },
+    });
+  }),
+
   // Mock Bluesky refresh session
   http.post(
     'https://bsky.social/xrpc/com.atproto.server.refreshSession',
