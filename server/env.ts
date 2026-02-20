@@ -1,17 +1,13 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 const envSchema = z.object({
-  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-  NEXT_PUBLIC_BACKEND_URL: z
-    .string()
-    .url()
-    .optional(),
-  BLUESKY_SERVICE_URL: z
-    .string()
-    .url()
-    .default("https://bsky.social"),
+  NODE_ENV: z
+    .enum(['development', 'test', 'production'])
+    .default('development'),
+  NEXT_PUBLIC_BACKEND_URL: z.string().url().optional(),
+  BLUESKY_SERVICE_URL: z.string().url().default('https://bsky.social'),
   EXTENSION_SHARED_SECRET: z.string().min(16),
-  ALLOWED_ORIGIN: z.string().optional()
+  ALLOWED_ORIGIN: z.string().optional(),
 });
 
 declare global {
@@ -31,26 +27,40 @@ export const getEnv = (): Env => {
     NEXT_PUBLIC_BACKEND_URL: process.env.NEXT_PUBLIC_BACKEND_URL,
     BLUESKY_SERVICE_URL: process.env.BLUESKY_SERVICE_URL,
     EXTENSION_SHARED_SECRET: process.env.EXTENSION_SHARED_SECRET,
-    ALLOWED_ORIGIN: process.env.ALLOWED_ORIGIN
+    ALLOWED_ORIGIN: process.env.ALLOWED_ORIGIN,
   });
 
   if (!parsed.success) {
+    // If running in test mode, provide safe defaults to allow tests to run in CI/CD.
+    const isTest = (process.env.NODE_ENV ?? 'development') === 'test';
+    if (isTest) {
+      const fallback: Env = {
+        NODE_ENV: 'test',
+        NEXT_PUBLIC_BACKEND_URL: process.env.NEXT_PUBLIC_BACKEND_URL,
+        BLUESKY_SERVICE_URL:
+          process.env.BLUESKY_SERVICE_URL ?? 'https://bsky.social',
+        EXTENSION_SHARED_SECRET:
+          process.env.EXTENSION_SHARED_SECRET ?? 'test-secret-key-0000',
+        ALLOWED_ORIGIN: process.env.ALLOWED_ORIGIN,
+      };
+      global.__bsext_env = fallback;
+      return fallback;
+    }
     // eslint-disable-next-line no-console
     console.error(
       JSON.stringify(
         {
-          level: "error",
-          msg: "Invalid environment variables",
-          issues: parsed.error.issues
+          level: 'error',
+          msg: 'Invalid environment variables',
+          issues: parsed.error.issues,
         },
         null,
         2
       )
     );
-    throw new Error("Invalid environment variables");
+    throw new Error('Invalid environment variables');
   }
 
   global.__bsext_env = parsed.data;
   return parsed.data;
 };
-

@@ -34,7 +34,7 @@ export const createTestContext = (options: TestContextOptions = {}) => {
 export type TestContext = Awaited<ReturnType<typeof createTestContext>>;
 
 const t = initTRPC.create();
-// Use a loose cast to accommodate testing with a flexible TRPCContext shape
+// Use TRPC's test helper to create a caller factory for the appRouter
 const createCaller = (t.createCallerFactory as any)(appRouter as any);
 
 /**
@@ -42,8 +42,8 @@ const createCaller = (t.createCallerFactory as any)(appRouter as any);
  */
 export const createTestCaller = (options: TestContextOptions = {}) => {
   const context = createTestContext(options);
-  // Cast to any to satisfy the test context shape during typechecking
-  return (createCaller as any)(context);
+  // Invoke the caller factory with the test context
+  return createCaller(context as any);
 };
 
 /**

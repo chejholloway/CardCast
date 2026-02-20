@@ -40,7 +40,10 @@ const LinkCardComposer: React.FC<{ url: string }> = ({ url }) => {
       });
       setStatus('success');
     } catch (error) {
+      console.error(error); // Log the error or handle it
       setStatus('error');
+    } finally {
+      console.info(data);
     }
   };
 

@@ -1,7 +1,7 @@
 import { http, HttpResponse } from 'msw';
 export const handlers = [
   // Mock successful OG fetch
-  http.post('http://localhost:3000/api/trpc/og.fetch', async ({ request }) => {
+  http.post('http://localhost:3000/api/trpc/og.fetch', async () => {
     return HttpResponse.json({
       result: {
         data: {

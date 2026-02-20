@@ -47,6 +47,7 @@ const Popup: React.FC = () => {
       setLiveMessage(`Logged in as @${identifier}`);
       setIdentifier('');
       setAppPassword('');
+      // eslint-disable-next-line no-unused-vars
     } catch (error) {
       setLoginError('Login failed');
     } finally {

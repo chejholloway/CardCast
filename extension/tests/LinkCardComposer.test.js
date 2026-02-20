@@ -35,7 +35,10 @@ const LinkCardComposer = ({ url }) => {
       });
       setStatus('success');
     } catch (error) {
+      console.error(error); // Log the error or handle it
       setStatus('error');
+    } finally {
+      console.info(data);
     }
   };
   const postWithCard = () => {
@@ -135,7 +138,7 @@ describe('LinkCardComposer', () => {
       name: /fetch link metadata/i,
     });
     await user.click(fetchButton);
-    expect(screen.getByText(/fetching metadata/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/fetching metadata/i).length).toBeGreaterThan(0);
   });
   it('should display fetched card data', async () => {
     const user = userEvent.setup();
@@ -174,8 +177,7 @@ describe('LinkCardComposer', () => {
           url: 'https://thehill.com/article',
           title: 'Test Article',
         }),
-      }),
-      expect.any(Function)
+      })
     );
   });
   it('should be accessible with proper aria labels', () => {

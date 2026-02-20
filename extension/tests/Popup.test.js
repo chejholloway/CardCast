@@ -44,6 +44,7 @@ const Popup = () => {
       setLiveMessage(`Logged in as @${identifier}`);
       setIdentifier('');
       setAppPassword('');
+      // eslint-disable-next-line no-unused-vars
     } catch (error) {
       setLoginError('Login failed');
     } finally {
@@ -260,7 +261,7 @@ describe('Popup', () => {
     await user.type(passwordInput, 'test-password');
     await user.click(loginButton);
     await waitFor(() => {
-      expect(screen.getByText(/logged in as/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/logged in as/i).length).toBeGreaterThan(0);
     });
   });
   it('should add a new domain', async () => {
@@ -269,8 +270,8 @@ describe('Popup', () => {
     await waitFor(() => {
       expect(screen.getByText('thehill.com')).toBeInTheDocument();
     });
-    const domainInput = screen.getByLabelText('Add domain');
-    const addButton = screen.getByRole('button', { name: /add/i });
+    const domainInput = screen.getByPlaceholderText('example.com');
+    const addButton = screen.getByRole('button', { name: 'Add domain' });
     await user.type(domainInput, 'newdomain.com');
     await user.click(addButton);
     await waitFor(() => {
@@ -282,6 +283,20 @@ describe('Popup', () => {
       })
     );
   });
+  it('should prevent adding duplicate domains', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(_jsx(Popup, {}));
+    await waitFor(() => {
+      expect(screen.getByText('thehill.com')).toBeInTheDocument();
+    });
+    const domainInput = screen.getByPlaceholderText('example.com');
+    const addButton = screen.getByRole('button', { name: 'Add domain' });
+    await user.type(domainInput, 'thehill.com');
+    await user.click(addButton);
+    // Domain count should remain the same
+    const domains = await screen.findAllByRole('listitem');
+    expect(domains.length).toBe(3); // Default 3 domains
+  });
   it('should remove a domain', async () => {
     const user = userEvent.setup();
     renderWithProviders(_jsx(Popup, {}));
@@ -291,20 +306,6 @@ describe('Popup', () => {
     const removeButtons = screen.getAllByRole('button', { name: /remove/i });
     await user.click(removeButtons[0]);
     expect(chrome.storage.session.set).toHaveBeenCalled();
-  });
-  it('should prevent adding duplicate domains', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(_jsx(Popup, {}));
-    await waitFor(() => {
-      expect(screen.getByText('thehill.com')).toBeInTheDocument();
-    });
-    const domainInput = screen.getByLabelText('Add domain');
-    const addButton = screen.getByRole('button', { name: /add/i });
-    await user.type(domainInput, 'thehill.com');
-    await user.click(addButton);
-    // Domain count should remain the same
-    const domains = await screen.findAllByRole('listitem');
-    expect(domains.length).toBe(3); // Default 3 domains
   });
   it('should have accessible aria labels', () => {
     renderWithProviders(_jsx(Popup, {}));

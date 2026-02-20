@@ -52,3 +52,5 @@ export const router = t.router;
 export const publicProcedure = t.procedure;
 /** Protected procedure (requires x-extension-secret header) */
 export const protectedProcedure = t.procedure.use(authMiddleware);
+/** Export tRPC instance for creating caller factories */
+export { t };
