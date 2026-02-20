@@ -6,7 +6,7 @@
     "moduleResolution": "bundler",
     "strict": true,
     "noEmit": false,
-    "outDir": "./dist",
+    "outDir": "../src/extension/dist",
     "rootDir": "./src",
     "jsx": "react-jsx",
     "esModuleInterop": true,

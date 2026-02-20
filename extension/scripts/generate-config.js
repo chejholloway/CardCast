@@ -67,3 +67,58 @@ fs.writeFileSync(configPath, configContent, 'utf8');
 console.log('✅ Extension config generated successfully');
 console.log('   Backend URL: [redacted]');
 console.log('   Secret: [redacted]');
+
+// After generating the in-tree config, also propagate necessary extension assets
+// to build outputs to ensure Chrome can load the extension from either
+// src/extension/dist or a legacy extension/dist location if present.
+try {
+  const destRootSrc = path.join(
+    __dirname,
+    '..',
+    '..',
+    'src',
+    'extension',
+    'dist'
+  );
+  const destRootLegacy = path.join(__dirname, '..', '..', 'extension', 'dist');
+  const ensureDir = (p) => {
+    if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });
+  };
+  ensureDir(destRootSrc);
+  ensureDir(destRootLegacy);
+
+  const copyTo = (src, dst) => {
+    if (fs.existsSync(src)) {
+      ensureDir(path.dirname(dst));
+      fs.copyFileSync(src, dst);
+    }
+  };
+
+  // Copy manifest to both destinations
+  const manifestSrc = path.join(__dirname, '..', 'manifest.json');
+  copyTo(manifestSrc, path.join(destRootSrc, 'manifest.json'));
+  copyTo(manifestSrc, path.join(destRootLegacy, 'manifest.json'));
+
+  // Copy icons to both destinations
+  const iconsSrcDir = path.join(__dirname, '..', 'icons');
+  if (fs.existsSync(iconsSrcDir)) {
+    fs.readdirSync(iconsSrcDir).forEach((fname) => {
+      const s = path.join(iconsSrcDir, fname);
+      copyTo(s, path.join(destRootSrc, 'icons', fname));
+      copyTo(s, path.join(destRootLegacy, 'icons', fname));
+    });
+  }
+
+  // Copy popup.html to both destinations
+  const popupSrc = path.join(__dirname, '..', 'src', 'popup.html');
+  if (fs.existsSync(popupSrc)) {
+    copyTo(popupSrc, path.join(destRootSrc, 'popup.html'));
+    copyTo(popupSrc, path.join(destRootLegacy, 'popup.html'));
+  } else {
+    const minimal = `<!doctype html><html><head><meta charset="utf-8"><title>Popup</title></head><body><script type="module" src="popup.js"></script></body></html>`;
+    copyTo(Buffer.from(minimal), path.join(destRootSrc, 'popup.html'));
+    copyTo(Buffer.from(minimal), path.join(destRootLegacy, 'popup.html'));
+  }
+} catch (err) {
+  console.warn('⚠️  Extension build asset copy failed:', err);
+}
