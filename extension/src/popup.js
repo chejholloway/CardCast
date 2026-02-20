@@ -146,7 +146,8 @@ const Popup = () => {
   return _jsxs('div', {
     role: 'region',
     'aria-label': 'Bluesky Link Card popup',
-    className: 'w-80 p-4 bg-slate-950 text-slate-100 text-sm',
+    className:
+      'w-80 p-4 bg-slate-950 text-slate-100 text-sm rounded-xl shadow-xl animate-pop',
     children: [
       _jsx('div', {
         'aria-live': 'polite',

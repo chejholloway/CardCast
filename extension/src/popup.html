@@ -4,14 +4,48 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Bluesky Link Card Popup</title>
+    <!-- Tailwind CSS (CDN) for rapid styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
       html,
       body {
         margin: 0;
         padding: 0;
       }
-      #root {
+      /* Center the popup card in the extension window */
+      html,
+      body {
         height: 100%;
+      }
+      body {
+        display: grid;
+        place-items: center;
+        min-height: 100vh;
+        /* Subtle dark backdrop to feel like a modal popup */
+        background: linear-gradient(
+          135deg,
+          #0b1220 0%,
+          #0f172a 60%,
+          #1e293b 100%
+        );
+        color: #e5e7eb;
+      }
+      #root {
+        height: auto;
+      }
+      /* Popup card entrance animation */
+      @keyframes popIn {
+        from {
+          transform: scale(0.96);
+          opacity: 0;
+        }
+        to {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+      .animate-pop {
+        animation: popIn 200ms ease-out;
       }
     </style>
   </head>
