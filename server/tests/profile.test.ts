@@ -3,7 +3,7 @@ import { server } from './mswServer';
 import { createTestCaller } from './testHelpers';
 
 describe('profile.getProfile', () => {
-  beforeAll(() => server.listen({ onUnhandledRequests: 'warn' }));
+  beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }));
   afterAll(() => server.close());
 
   it('returns a profile object for a valid actor', async () => {
