@@ -3,7 +3,7 @@
   "name": "Bluesky Link Card Composer",
   "description": "Enhances Bluesky with native-feeling rich link cards for sites whose OG metadata is not fetched by Bluesky.",
   "version": "0.1.0",
-  "permissions": ["storage", "scripting", "activeTab"],
+  "permissions": ["storage", "scripting", "activeTab", "tabs"],
   "host_permissions": ["https://bsky.app/*"],
   "background": {
     "service_worker": "background.js",
