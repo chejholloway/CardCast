@@ -28,8 +28,9 @@ export const getEnv = () => {
         NEXT_PUBLIC_BACKEND_URL: process.env.NEXT_PUBLIC_BACKEND_URL,
         BLUESKY_SERVICE_URL:
           process.env.BLUESKY_SERVICE_URL ?? 'https://bsky.social',
+        // Align test defaults with test helpers: use 'test-secret' when not provided
         EXTENSION_SHARED_SECRET:
-          process.env.EXTENSION_SHARED_SECRET ?? 'test-secret-key-0000',
+          process.env.EXTENSION_SHARED_SECRET ?? 'test-secret',
         ALLOWED_ORIGIN: process.env.ALLOWED_ORIGIN,
       };
       global.__bsext_env = fallback;
