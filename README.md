@@ -197,6 +197,8 @@ Planned components:
 
 - **Type-Safe Communication**: End-to-end type safety between extension and backend via tRPC and Zod.
 
+- **UI Reliability**: Fixed an issue where the extension popup would shrink to the browser icon width. The popup now uses a stable fixed width (420px) to reliably display inputs and controls, even if external CSS resources fail to load. This change improves the user experience during Bluesky link-card posting.
+
 ---
 
 ## Type Safety & Shared Types

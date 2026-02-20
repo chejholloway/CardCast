@@ -12,6 +12,13 @@
         margin: 0;
         padding: 0;
       }
+      /* Ensure a stable popup size independent of CSS loading
+         and content width. This fixes the common issue where the
+         popup window snaps to the width of the browser icon. */
+      #root {
+        width: 420px;
+        max-width: 92vw;
+      }
       /* Center the popup card in the extension window */
       html,
       body {
