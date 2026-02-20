@@ -9,6 +9,7 @@ node_modules/
 # Next.js
 /.next/
 /out/
+/dist
 
 # Production
 /build
@@ -35,6 +36,7 @@ next-env.d.ts
 
 # Extension build
 extension/dist/
+dist
 
 # VS Code
 .vscode/settings.json

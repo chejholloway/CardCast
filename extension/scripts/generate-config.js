@@ -65,5 +65,5 @@ const configPath = path.join(__dirname, '../src/config.ts');
 fs.writeFileSync(configPath, configContent, 'utf8');
 
 console.log('✅ Extension config generated successfully');
-console.log(`   Backend URL: ${BACKEND_URL}`);
-console.log(`   Secret: ${EXTENSION_SHARED_SECRET.substring(0, 10)}...`);
+console.log('   Backend URL: [redacted]');
+console.log('   Secret: [redacted]');
