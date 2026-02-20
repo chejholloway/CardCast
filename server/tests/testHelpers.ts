@@ -16,7 +16,9 @@ export interface TestContextOptions {
 export const createTestContext = (options: TestContextOptions = {}) => {
   const headers = new Headers({
     'x-extension-secret':
-      options.secret || process.env.EXTENSION_SHARED_SECRET || 'test-secret',
+      options.secret ||
+      process.env.EXTENSION_SHARED_SECRET ||
+      'test-secret-key-0000',
   });
 
   if (options.origin) {

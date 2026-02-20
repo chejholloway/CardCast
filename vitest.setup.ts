@@ -9,7 +9,8 @@ beforeAll(() => {
   server.listen({ onUnhandledRequest: 'warn' });
   // Mock Next.js environment
   process.env.NEXT_PUBLIC_API_URL = 'http://localhost:3000';
-  process.env.EXTENSION_SHARED_SECRET = 'test-secret-12345';
+  // Use a stable test secret that matches the defaults in env.js/env.ts/tests
+  process.env.EXTENSION_SHARED_SECRET = 'test-secret-key-0000';
   process.env.BLUESKY_SERVICE_URL = 'https://bsky.social';
 });
 

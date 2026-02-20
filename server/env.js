@@ -30,7 +30,7 @@ export const getEnv = () => {
           process.env.BLUESKY_SERVICE_URL ?? 'https://bsky.social',
         // Align test defaults with test helpers: use 'test-secret' when not provided
         EXTENSION_SHARED_SECRET:
-          process.env.EXTENSION_SHARED_SECRET ?? 'test-secret',
+          process.env.EXTENSION_SHARED_SECRET ?? 'test-secret-key-0000',
         ALLOWED_ORIGIN: process.env.ALLOWED_ORIGIN,
       };
       global.__bsext_env = fallback;
