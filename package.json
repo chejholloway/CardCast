@@ -11,7 +11,7 @@
     "start": "next start",
     "lint": "npx oxlint .",
     "lint:staged": "npx lint-staged",
-    "build:ext": "node extension/scripts/generate-config.js && node extension/scripts/bundle-extension.js && node extension/scripts/copy-all-ext-assets.js && node extension/scripts/copy-tailwind-css.js",
+    "build:ext": "node extension/scripts/generate-config.js && node extension/scripts/bundle-extension.js && node extension/scripts/copy-tailwind-css.js",
     "validate:ext": "node extension/scripts/validate-ext-build.js",
     "build:css": "tailwindcss -c tailwind.config.cjs -i ./styles/globals.css -o ./public/tailwind.css --minify",
     "lint:accessibility": "eslint extension --ext .ts,.tsx,.js,.jsx",

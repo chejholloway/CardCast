@@ -12,6 +12,9 @@
 const fs = require('fs');
 const path = require('path');
 
+const packageJson = require(path.join(__dirname, '..', '..', 'package.json'));
+const extensionVersion = packageJson.version;
+
 // Try to load .env file if it exists
 const envPath = path.join(__dirname, '../.env');
 if (fs.existsSync(envPath)) {
@@ -86,7 +89,14 @@ console.log('✅ Extension config generated successfully');
 console.log('   Backend URL: [redacted]');
 console.log('   Secret: [redacted]');
 
-// After generating the in-tree config, also propagate necessary extension assets
+// Update manifest.json with the version from package.json
+const manifestPath = path.join(__dirname, '..', 'manifest.json');
+const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+manifest.version = extensionVersion;
+fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
+console.log(`✅ Updated manifest.json with version ${extensionVersion}`);
+
+// After generating the in-tree config and updating manifest, also propagate necessary extension assets
 // to build outputs to ensure Chrome can load the extension from either
 // src/extension/dist or a legacy extension/dist location if present.
 try {

@@ -31,6 +31,9 @@ async function bundleAll() {
             outfile: e.out,
             logLevel: 'info',
             target: 'es2020',
+            sourcemap:
+              process.env.NODE_ENV === 'development' ? 'inline' : false,
+            minify: process.env.NODE_ENV === 'production',
           })
           .catch((err) => {
             throw err;
