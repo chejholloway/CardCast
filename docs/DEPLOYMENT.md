@@ -5,10 +5,11 @@ This guide covers how to deploy the CardCast backend to Vercel and package the C
 ## Table of Contents
 
 1. [Backend Deployment (Vercel)](#backend-deployment-vercel)
-2. [Extension Packaging](#extension-packaging)
-3. [Environment Setup](#environment-setup)
-4. [Verification Checklist](#verification-checklist)
-5. [Rollback & Troubleshooting](#rollback--troubleshooting)
+2. [Docker Deployment](#docker-deployment)
+3. [Extension Packaging](#extension-packaging)
+4. [Environment Setup](#environment-setup)
+5. [Verification Checklist](#verification-checklist)
+6. [Rollback & Troubleshooting](#rollback--troubleshooting)
 
 ---
 
@@ -23,6 +24,7 @@ This guide covers how to deploy the CardCast backend to Vercel and package the C
 ### Step 1: Prepare Repository
 
 1. Ensure all code is committed to git:
+
    ```bash
    git status
    git add .
@@ -30,6 +32,7 @@ This guide covers how to deploy the CardCast backend to Vercel and package the C
    ```
 
 2. Verify environment setup locally:
+
    ```bash
    npm run build
    npm run test
@@ -49,6 +52,7 @@ This guide covers how to deploy the CardCast backend to Vercel and package the C
 5. Click **"Deploy"** (you'll set environment variables next)
 
 **Alternative**: Deploy via CLI
+
 ```bash
 npm i -g vercel
 vercel
@@ -63,15 +67,195 @@ In Vercel Dashboard:
 2. Click **Settings** → **Environment Variables**
 3. Add the following variables to **Production**:
 
-| Variable | Value | Notes |
-|----------|-------|-------|
-| `EXTENSION_SHARED_SECRET` | `<strong-random-secret>` | Must be ≥16 chars, keep secure |
-| `NEXT_PUBLIC_BACKEND_URL` | `https://<your-project>.vercel.app` | Your Vercel project URL |
-| `BLUESKY_SERVICE_URL` | `https://bsky.social` | Bluesky PDS endpoint |
-| `NODE_ENV` | `production` | Set to production |
-| `ALLOWED_ORIGIN` | (optional) | Leave empty for now |
+| Variable                  | Value                               | Notes                          |
+| ------------------------- | ----------------------------------- | ------------------------------ |
+| `EXTENSION_SHARED_SECRET` | `<strong-random-secret>`            | Must be ≥16 chars, keep secure |
+| `NEXT_PUBLIC_BACKEND_URL` | `https://<your-project>.vercel.app` | Your Vercel project URL        |
+| `BLUESKY_SERVICE_URL`     | `https://bsky.social`               | Bluesky PDS endpoint           |
+| `NODE_ENV`                | `production`                        | Set to production              |
+| `ALLOWED_ORIGIN`          | (optional)                          | Leave empty for now            |
 
 **Generating a secure secret:**
+
+```bash
+openssl rand -base64 32
+# Output: mN7x9q2kL8+vW3jP5sR0tYhOaIrW4bX9dF6eG2cH1dJ=
+```
+
+4. Click **"Save"**
+
+### Step 4: Deploy
+
+1. Vercel automatically deploys when you push to `main`
+   - Or manually trigger: **Deployments** → **Redeploy**
+
+2. Watch the build logs in real-time
+
+3. Once complete, you'll see a **"Visit"** button - click it to test the backend
+
+### Step 5: Verify Backend
+
+Test the deployment:
+
+```bash
+# Test if backend is accessible (expects UNAUTHORIZED without secret)
+curl https://<your-project>.vercel.app/api/trpc/auth.status
+
+# Should return a JSON error (no secret header)
+```
+
+---
+
+## Docker Deployment
+
+This section outlines how to containerize and deploy the CardCast backend using Docker.
+
+### Prerequisites
+
+- Docker installed on your machine.
+- Familiarity with Docker commands.
+
+### Step 1: Build the Docker Image
+
+Navigate to the root of your project where the `Dockerfile` is located and run:
+
+```bash
+docker build -t cardcast-backend .
+```
+
+This command builds a Docker image named `cardcast-backend`.
+
+### Step 2: Run the Docker Container
+
+You can run the Docker container locally using:
+
+```bash
+docker run -p 3000:3000 -d --name cardcast-app cardcast-backend
+```
+
+- `-p 3000:3000`: Maps port 3000 on your host to port 3000 in the container.
+- `-d`: Runs the container in detached mode (in the background).
+- `--name cardcast-app`: Assigns a name to your container for easy reference.
+
+### Step 3: Configure Environment Variables
+
+Environment variables can be passed to the Docker container using the `-e` flag. For example:
+
+```bash
+docker run -p 3000:3000 -d --name cardcast-app \
+  -e EXTENSION_SHARED_SECRET="your-secure-random-secret" \
+  -e NEXT_PUBLIC_BACKEND_URL="http://localhost:3000" \
+  -e BLUESKY_SERVICE_URL="https://bsky.social" \
+  cardcast-backend
+```
+
+For production, you would replace `http://localhost:3000` with your public-facing URL and ensure all necessary `KV_` environment variables for Vercel KV are set if you are using a Redis provider other than Vercel KV directly.
+
+### Step 4: Verify Deployment
+
+Once the container is running, you can verify its status:
+
+```bash
+docker ps
+```
+
+You can also test the backend by accessing `http://localhost:3000` in your browser or using `curl`.
+
+```bash
+curl http://localhost:3000/api/trpc/auth.status
+```
+
+### Step 5: Pushing to a Container Registry (e.g., Docker Hub)
+
+To deploy to a cloud provider (like AWS ECS, Google Cloud Run, Azure Container Instances), you'll typically push your image to a container registry.
+
+1.  **Login to your registry:**
+
+    ```bash
+    docker login
+    ```
+
+    (For Docker Hub, `docker login`)
+
+2.  **Tag your image:**
+
+    ```bash
+    docker tag cardcast-backend your-dockerhub-username/cardcast-backend:latest
+    ```
+
+3.  **Push the image:**
+    ```bash
+    docker push your-dockerhub-username/cardcast-backend:latest
+    ```
+
+Now your Docker image is available for deployment on any platform that supports Docker containers.
+
+---
+
+## Extension Packaging
+
+### Prerequisites
+
+- Vercel account at https://vercel.com
+- Git repository (GitHub, GitLab, or Bitbucket) with CardCast code
+- Node.js 18+ locally for testing
+
+### Step 1: Prepare Repository
+
+1. Ensure all code is committed to git:
+
+   ```bash
+   git status
+   git add .
+   git commit -m "chore: prepare for vercel deployment"
+   ```
+
+2. Verify environment setup locally:
+
+   ```bash
+   npm run build
+   npm run test
+   ```
+
+3. Push to your git provider:
+   ```bash
+   git push origin main
+   ```
+
+### Step 2: Create Vercel Project
+
+1. Go to https://vercel.com/dashboard
+2. Click **"Add New..."** → **"Project"**
+3. Import your repository
+4. Vercel will auto-detect the Next.js project
+5. Click **"Deploy"** (you'll set environment variables next)
+
+**Alternative**: Deploy via CLI
+
+```bash
+npm i -g vercel
+vercel
+# Follow prompts, link your git repository
+```
+
+### Step 3: Configure Environment Variables
+
+In Vercel Dashboard:
+
+1. Go to your project
+2. Click **Settings** → **Environment Variables**
+3. Add the following variables to **Production**:
+
+| Variable                  | Value                               | Notes                          |
+| ------------------------- | ----------------------------------- | ------------------------------ |
+| `EXTENSION_SHARED_SECRET` | `<strong-random-secret>`            | Must be ≥16 chars, keep secure |
+| `NEXT_PUBLIC_BACKEND_URL` | `https://<your-project>.vercel.app` | Your Vercel project URL        |
+| `BLUESKY_SERVICE_URL`     | `https://bsky.social`               | Bluesky PDS endpoint           |
+| `NODE_ENV`                | `production`                        | Set to production              |
+| `ALLOWED_ORIGIN`          | (optional)                          | Leave empty for now            |
+
+**Generating a secure secret:**
+
 ```bash
 openssl rand -base64 32
 # Output: mN7x9q2kL8+vW3jP5sR0tYhOaIrW4bX9dF6eG2cH1dJ=
@@ -110,15 +294,8 @@ Update `extension/manifest.json` with your backend URL:
 ```json
 {
   "manifest_version": 3,
-  "permissions": [
-    "storage",
-    "tabs",
-    "activeTab",
-    "scripting"
-  ],
-  "host_permissions": [
-    "https://bsky.app/*"
-  ],
+  "permissions": ["storage", "tabs", "activeTab", "scripting"],
+  "host_permissions": ["https://bsky.app/*"],
   "externally_connectable": {
     "matches": ["https://bsky.app/*"]
   }
@@ -133,6 +310,7 @@ const EXTENSION_SHARED_SECRET = '<from-env>';
 ```
 
 Or use environment variables:
+
 ```bash
 # In extension/.env
 NEXT_PUBLIC_BACKEND_URL=https://your-project.vercel.app
@@ -150,6 +328,7 @@ This creates `extension/dist/` with compiled code.
 ### Step 3: Load in Browser (Development)
 
 #### Chrome/Edge:
+
 1. Go to `chrome://extensions`
 2. Enable **Developer Mode** (top-right)
 3. Click **"Load unpacked"**
@@ -157,6 +336,7 @@ This creates `extension/dist/` with compiled code.
 5. Extension appears in your toolbar
 
 #### Testing:
+
 1. Open https://bsky.app (must be logged in)
 2. Click the compose button
 3. Paste a URL (e.g., https://thehill.com/policy/...)
@@ -175,6 +355,7 @@ This creates `extension/dist/` with compiled code.
 #### Option B: Manual Distribution
 
 Create a ZIP file:
+
 ```bash
 cd extension/dist
 zip -r ../cardcast-extension.zip .
@@ -183,6 +364,7 @@ zip -r ../cardcast-extension.zip .
 Share `cardcast-extension.zip` with users.
 
 **Users can load it:**
+
 ```bash
 # Extract the ZIP somewhere
 # Go to chrome://extensions
@@ -192,6 +374,7 @@ Share `cardcast-extension.zip` with users.
 #### Option C: Signed XPI (Firefox)
 
 Install dependencies and build:
+
 ```bash
 npm run build:ext
 # Manually package for Firefox (currently MV3 Chrome-only)
@@ -293,6 +476,7 @@ In Vercel Dashboard:
 **Problem:** "Network error" or "Request timed out"
 
 **Solution:**
+
 1. Verify `NEXT_PUBLIC_BACKEND_URL` is correct
 2. Check CORS: ensure `ALLOWED_ORIGIN` is not set or matches extension origin
 3. Verify `EXTENSION_SHARED_SECRET` matches between extension and backend
@@ -303,6 +487,7 @@ In Vercel Dashboard:
 **Problem:** Getting "Rate limit exceeded" immediately
 
 **Solution:**
+
 - Current limit is 10 requests per minute per IP
 - For development: modify `RATE_LIMIT` in `server/trpc/routers/og.ts`
 - For production: use Redis-backed rate limiter (see [CONFIGURATION.md](./CONFIGURATION.md))
@@ -312,6 +497,7 @@ In Vercel Dashboard:
 **Problem:** Posts created but no thumbnail
 
 **Solution:**
+
 1. Verify OG image URL is accessible
 2. Check image is JPEG/PNG format
 3. Verify Bluesky API token is valid
@@ -322,6 +508,7 @@ In Vercel Dashboard:
 **Problem:** "Domain not allowed" error
 
 **Solution:**
+
 - Only thehill.com, theroot.com, usanews.com are whitelisted
 - To add domains: edit `ALLOWED_DOMAINS` in `server/trpc/routers/og.ts`
 - Test locally first, then deploy
@@ -329,6 +516,7 @@ In Vercel Dashboard:
 ### Enable Debug Logging
 
 **Backend:**
+
 ```typescript
 // In server/log.ts
 export const log = {
@@ -340,6 +528,7 @@ export const log = {
 ```
 
 **Extension:**
+
 ```typescript
 // In extension/src/background.ts or contentScript.tsx
 console.log('DEBUG:', message);
@@ -349,6 +538,7 @@ console.log('DEBUG:', message);
 ### Vercel Support
 
 If issues persist:
+
 1. Check Vercel Function logs: Dashboard → Deployments → Logs
 2. Check build logs: Dashboard → Deployments → Build Logs
 3. Contact Vercel support: https://vercel.com/support
