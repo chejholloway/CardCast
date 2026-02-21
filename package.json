@@ -3,7 +3,6 @@
   "version": "0.1.0",
   "private": true,
   "author": "Che' J. Holloway",
-  "email": "chejholloway@tutamail.com",
   "scripts": {
     "prepare": "husky",
     "dev": "next dev",
@@ -29,6 +28,7 @@
     "@trpc/client": "11.9.0",
     "@trpc/react-query": "11.9.0",
     "@trpc/server": "11.9.0",
+    "@upstash/ratelimit": "^2.0.8",
     "@vercel/kv": "^3.0.0",
     "cheerio": "^1.0.0-rc.12",
     "dompurify": "^3.3.1",
@@ -45,14 +45,16 @@
     "@testing-library/react": "^14.1.2",
     "@testing-library/user-event": "^14.5.1",
     "@types/chrome": "^0.1.36",
-    "@types/dompurify": "^3.0.5",
     "@types/node": "^20.11.24",
     "@types/react": "^18.2.61",
     "@types/react-dom": "^18.2.19",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
-    "@vitest/ui": "^1.1.0",
+    "@vitest/ui": "^1.6.0",
     "esbuild": "^0.27.3",
+    "eslint": "^8.56.0",
+    "eslint-plugin-jsx-a11y": "^6.6.0",
+    "eslint-plugin-react": "^7.31.0",
     "husky": "^9.1.7",
     "jsdom": "^23.0.1",
     "lint-staged": "^15.5.2",
@@ -65,7 +67,7 @@
     "typedoc": "^0.28.17",
     "typedoc-plugin-markdown": "^4.10.0",
     "typescript": "^5.4.2",
-    "vitest": "^1.1.0"
+    "vitest": "^1.6.0"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [

@@ -1,23 +1,13 @@
 import { kv } from '@vercel/kv';
+import { Ratelimit } from '@upstash/ratelimit';
+
+// Create a new ratelimiter, that allows 10 requests per 60 seconds
+const ratelimit = new Ratelimit({
+  redis: kv,
+  limiter: Ratelimit.slidingWindow(10, '60 s'),
+});
 
 export const checkRateLimit = async (ip: string): Promise<boolean> => {
-  const key = `ratelimit:${ip}`;
-  const now = Date.now();
-  const window = 60 * 1000; // 1 minute
-  const limit = 10;
-
-  // Get timestamps from Redis
-  const timestamps = await kv.lrange(key, 0, -1);
-  const recent = timestamps.map(Number).filter((ts) => now - ts < window);
-
-  if (recent.length >= limit) {
-    return false;
-  }
-
-  // Add new timestamp
-  await kv.lpush(key, now);
-  await kv.ltrim(key, 0, limit - 1);
-  await kv.expire(key, 60); // Auto-expire after 1 minute
-
-  return true;
+  const { success } = await ratelimit.limit(ip);
+  return success;
 };
