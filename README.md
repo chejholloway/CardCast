@@ -65,11 +65,12 @@ Then visit https://bsky.app, compose a post, paste a URL from thehill.com/theroo
   - Popup UI for **Bluesky login** and managing allowed domains.
 - **Next.js 14 Backend (Vercel)**
   - Single **`appRouter`** with sub-routers:
-    - `ogRouter` – fetch and parse Open Graph metadata via **cheerio**.
-    - `postRouter` – upload image blobs and create Bluesky posts via **@atproto/api**.
+    - `ogRouter` – fetch and parse Open Graph metadata via **cheerio**, with **Vercel KV caching**.
+    - `postRouter` – upload image blobs, **validate and compress images**, and create Bluesky posts via **@atproto/api**.
     - `authRouter` – log in with handle + app password and return a lightweight session.
   - **Zod** used for all input/output validation.
   - **Shared-secret middleware** ensures only the extension can call the API.
+  - **Persistent rate limiting** using Vercel KV.
   - **Structured JSON logging** for Vercel log drains.
 
 **Diagram (described)**:
@@ -193,7 +194,9 @@ Planned components:
 
 - **Theme Awareness**: Automatically adapts to Bluesky's dark/light mode by detecting theme changes on the page.
 
-- **Rate Limiting**: Backend enforces 10 requests per minute per IP to prevent abuse.
+- **Rate Limiting**: Backend enforces 10 requests per minute per IP using **persistent storage (Vercel KV)** to prevent abuse across serverless cold starts.
+
+- **Image Optimization**: Images are validated for size and automatically compressed using `sharp` before uploading to Bluesky, ensuring reliable posting and optimal performance.
 
 - **Type-Safe Communication**: End-to-end type safety between extension and backend via tRPC and Zod.
 

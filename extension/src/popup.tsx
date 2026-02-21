@@ -1,23 +1,24 @@
 /**
  * Extension popup UI for managing authentication and allowed domains
- * 
+ *
  * Provides a user-friendly interface for:
  * - Bluesky login/logout with handle and app passwords
  * - Managing whitelist of allowed domains for card creation
  * - Current authentication status display
- * 
+ *
  * Persists authentication state in chrome.storage.session and domain list
  * in chrome.storage.session.
- * 
+ *
  * @module popup
  * @requires React, react-dom, QueryClient, tRPC
  */
 
-import React, { useEffect, useState } from "react";
-import { createRoot } from "react-dom/client";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import React, { useEffect, useState } from 'react';
+import { createRoot } from 'react-dom/client';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-import { trpc, trpcClient } from "./trpcClient";
+import { trpc, trpcClient } from './trpcClient';
+import { ErrorBoundary } from './ErrorBoundary';
 
 /**
  * Shared React Query client for the popup
@@ -27,26 +28,27 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 2,
-      retryDelay: attempt => Math.min(1000 * 2 ** attempt, 10_000)
-    }
-  }
+      retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10_000),
+    },
+  },
 });
-
 
 /**
  * TRPC provider component - wraps children with QueryClientProvider and tRPC context
- * 
+ *
  * @component
  * @param {Object} props - Component props
  * @param {React.ReactNode} props.children - Child components to wrap
  * @returns {React.ReactElement} Provider-wrapped children
- * 
+ *
  * @example
  * <TRPCProvider>
  *   <Popup />
  * </TRPCProvider>
  */
-const TRPCProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+const TRPCProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => (
   <QueryClientProvider client={queryClient}>
     <trpc.Provider client={trpcClient} queryClient={queryClient}>
       {children}
@@ -56,7 +58,7 @@ const TRPCProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
 /**
  * Main popup UI component
- * 
+ *
  * Features:
  * - Login/logout form with Bluesky credentials
  * - Real-time auth status queries with tRPC
@@ -64,16 +66,16 @@ const TRPCProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
  * - ARIA labels and live regions for screen reader accessibility
  * - Persistent domain storage in chrome.storage.session
  * - Error display for failed authentication attempts
- * 
+ *
  * @component
  * @returns {React.ReactElement} Popup UI with auth form and domain management
- * 
+ *
  * @example
  * // Rendered in popup.html via JavaScript
  * <TRPCProvider>
  *   <Popup />
  * </TRPCProvider>
- * 
+ *
  * Features:
  * - Login with Bluesky handle (e.g., "user.bsky.social") and app password
  * - View current login status
@@ -81,27 +83,27 @@ const TRPCProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
  * - Remove existing domains from whitelist
  */
 const Popup: React.FC = () => {
-  const [identifier, setIdentifier] = useState("");
-  const [appPassword, setAppPassword] = useState("");
+  const [identifier, setIdentifier] = useState('');
+  const [appPassword, setAppPassword] = useState('');
   const [domains, setDomains] = useState<string[]>([]);
-  const [newDomain, setNewDomain] = useState("");
-  const [liveMessage, setLiveMessage] = useState<string>("");
+  const [newDomain, setNewDomain] = useState('');
+  const [liveMessage, setLiveMessage] = useState<string>('');
 
-
-  const { data: authStatus, refetch: refetchAuth } = trpc.auth.status.useQuery();
+  const { data: authStatus, refetch: refetchAuth } =
+    trpc.auth.status.useQuery();
   const loginMutation = trpc.auth.login.useMutation({
-    onSuccess: () => refetchAuth()
+    onSuccess: () => refetchAuth(),
   });
 
   // Accessibility live messages
   useEffect(() => {
     if (loginMutation.isPending) {
-      setLiveMessage("Signing in to Bluesky");
+      setLiveMessage('Signing in to Bluesky');
     } else if (authStatus?.loggedIn) {
-      const h = authStatus?.session?.handle ?? "";
-      setLiveMessage(h ? `Logged in as @${h}` : "Logged in");
+      const h = authStatus?.session?.handle ?? '';
+      setLiveMessage(h ? `Logged in as @${h}` : 'Logged in');
     } else if (authStatus) {
-      setLiveMessage("Not logged in");
+      setLiveMessage('Not logged in');
     }
   }, [loginMutation.isPending, authStatus]);
 
@@ -111,8 +113,8 @@ const Popup: React.FC = () => {
    */
   useEffect(() => {
     // Load domains
-    chrome.storage.session.get(["allowedDomains"], (result) => {
-      let allowed: string[] = ["thehill.com", "theroot.com", "usanews.com"];
+    chrome.storage.session.get(['allowedDomains'], (result) => {
+      let allowed: string[] = ['thehill.com', 'theroot.com', 'usanews.com'];
       if (result && Array.isArray(result.allowedDomains)) {
         allowed = result.allowedDomains;
       }
@@ -136,7 +138,7 @@ const Popup: React.FC = () => {
       const updated = [...domains, newDomain];
       setDomains(updated);
       chrome.storage.session.set({ allowedDomains: updated });
-      setNewDomain("");
+      setNewDomain('');
       setLiveMessage(`Domain added: ${newDomain}`);
     }
   };
@@ -145,7 +147,7 @@ const Popup: React.FC = () => {
    * Removes domain from allowed list and persists to chrome.storage.session
    */
   const removeDomain = (domain: string) => {
-    const updated = domains.filter(d => d !== domain);
+    const updated = domains.filter((d) => d !== domain);
     setDomains(updated);
     chrome.storage.session.set({ allowedDomains: updated });
     setLiveMessage(`Domain removed: ${domain}`);
@@ -155,14 +157,22 @@ const Popup: React.FC = () => {
   const handle = authStatus?.session?.handle;
 
   return (
-    <div role="region" aria-label="Bluesky Link Card popup" className="w-80 p-4 bg-slate-950 text-slate-100 text-sm">
-      <div aria-live="polite" className="sr-only" id="popup-live">{liveMessage}</div>
+    <div
+      role="region"
+      aria-label="Bluesky Link Card popup"
+      className="w-80 p-4 bg-slate-950 text-slate-100 text-sm"
+    >
+      <div aria-live="polite" className="sr-only" id="popup-live">
+        {liveMessage}
+      </div>
       <h1 className="text-base font-semibold mb-2">Bluesky Link Card</h1>
       {loginMutation.isPending && (
         <div className="text-xs text-slate-300 mb-2">Signing in…</div>
       )}
       {loginMutation.error && (
-        <div className="text-xs text-red-400 mb-2">{loginMutation.error.message}</div>
+        <div className="text-xs text-red-400 mb-2">
+          {loginMutation.error.message}
+        </div>
       )}
       {loggedIn ? (
         <div className="space-y-1 mb-4">
@@ -183,7 +193,7 @@ const Popup: React.FC = () => {
               aria-label="Bluesky handle"
               className="mt-1 w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-sky-500"
               value={identifier}
-              onChange={e => setIdentifier(e.target.value)}
+              onChange={(e) => setIdentifier(e.target.value)}
               placeholder="you.bsky.social"
             />
           </label>
@@ -195,7 +205,7 @@ const Popup: React.FC = () => {
               type="password"
               className="mt-1 w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-sky-500"
               value={appPassword}
-              onChange={e => setAppPassword(e.target.value)}
+              onChange={(e) => setAppPassword(e.target.value)}
               placeholder="xxxx-xxxx-xxxx-xxxx"
             />
           </label>
@@ -206,16 +216,24 @@ const Popup: React.FC = () => {
             onClick={onLogin}
             disabled={loginMutation.isPending}
           >
-            {loginMutation.isPending ? "Signing in…" : "Sign in to Bluesky"}
+            {loginMutation.isPending ? 'Signing in…' : 'Sign in to Bluesky'}
           </button>
         </div>
       )}
 
       <div className="border-t border-slate-800 pt-2 mt-2">
         <h2 className="text-sm font-medium mb-2">Allowed Domains</h2>
-        <div role="list" aria-label="Allowed domains" className="space-y-1 mb-2">
-          {domains.map(domain => (
-            <div key={domain} role="listitem" className="flex justify-between items-center">
+        <div
+          role="list"
+          aria-label="Allowed domains"
+          className="space-y-1 mb-2"
+        >
+          {domains.map((domain) => (
+            <div
+              key={domain}
+              role="listitem"
+              className="flex justify-between items-center"
+            >
               <span className="text-xs">{domain}</span>
               <button
                 aria-label={`Remove domain ${domain}`}
@@ -234,7 +252,7 @@ const Popup: React.FC = () => {
             id="domain-input"
             className="flex-1 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-sky-500"
             value={newDomain}
-            onChange={e => setNewDomain(e.target.value)}
+            onChange={(e) => setNewDomain(e.target.value)}
             placeholder="example.com"
           />
           <button
@@ -264,20 +282,22 @@ const Popup: React.FC = () => {
 
 /**
  * Mounts the Popup component into the DOM root element
- * 
+ *
  * Called on popup.html script load to initialize the popup UI.
  * Safely no-ops if root element is not found.
- * 
+ *
  * @returns {void}
  */
 const mountPopup = () => {
-  const container = document.getElementById("root");
+  const container = document.getElementById('root');
   if (!container) return;
   const root = createRoot(container);
   root.render(
-    <TRPCProvider>
-      <Popup />
-    </TRPCProvider>
+    <ErrorBoundary>
+      <TRPCProvider>
+        <Popup />
+      </TRPCProvider>
+    </ErrorBoundary>
   );
 };
 
@@ -285,4 +305,3 @@ const mountPopup = () => {
  * Initialize popup UI on script load
  */
 mountPopup();
-

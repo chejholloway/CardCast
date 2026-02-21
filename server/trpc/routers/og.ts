@@ -16,6 +16,8 @@ import { z } from 'zod';
 import * as cheerio from 'cheerio';
 import { protectedProcedure, router } from '../base';
 import { log } from '../../log';
+import { kv } from '@vercel/kv';
+import { checkRateLimit } from '../../lib/rateLimit';
 
 /** Input schema for OG fetch: a valid URL */
 const ogInputSchema = z.object({
@@ -45,29 +47,6 @@ const realisticHeaders: Record<string, string> = {
 };
 
 // Simple in-memory rate limiter (resets on cold start)
-/** Rate limiting map: IP -> array of request timestamps */
-const rateLimitMap = new Map<string, number[]>();
-/** Maximum requests per rate window */
-const RATE_LIMIT = 10; // requests
-/** Rate limiting window in milliseconds */
-const RATE_WINDOW = 60 * 1000; // 1 minute
-
-/**
- * Check if IP has exceeded rate limit
- * @param {string} ip - Client IP address
- * @returns {boolean} True if under limit, false if exceeded
- */
-const checkRateLimit = (ip: string): boolean => {
-  const now = Date.now();
-  const timestamps = rateLimitMap.get(ip) || [];
-  const recent = timestamps.filter((ts) => now - ts < RATE_WINDOW);
-  if (recent.length >= RATE_LIMIT) {
-    return false;
-  }
-  recent.push(now);
-  rateLimitMap.set(ip, recent);
-  return true;
-};
 
 /**
  * Wrap a promise with a timeout
@@ -140,8 +119,16 @@ export const ogRouter = router({
     .input(ogInputSchema)
     .output(ogOutputSchema)
     .query(async ({ input, ctx }) => {
+      const cacheKey = `og:${input.url}`;
+      const cached = await kv.get<OgFetchOutput>(cacheKey);
+
+      if (cached) {
+        log.info('OG cache hit', { url: input.url });
+        return cached;
+      }
+
       const ip = ctx.req.ip ?? 'unknown';
-      if (!checkRateLimit(ip)) {
+      if (!(await checkRateLimit(ip))) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
           message: 'Rate limit exceeded',
@@ -205,11 +192,12 @@ export const ogRouter = router({
       }
 
       const $ = cheerio.load(html);
-      const title = $('meta[property="og:title"]').attr('content')?.trim();
-      const description = $('meta[property="og:description"]')
-        .attr('content')
-        ?.trim();
-      const imageUrl = $('meta[property="og:image"]').attr('content')?.trim();
+      const title =
+        $('meta[property="og:title"]').attr('content')?.trim() || '';
+      const description =
+        $('meta[property="og:description"]').attr('content')?.trim() || '';
+      const imageUrl =
+        $('meta[property="og:image"]').attr('content')?.trim() || '';
 
       if (!title || !description || !imageUrl) {
         throw new TRPCError({
@@ -223,6 +211,16 @@ export const ogRouter = router({
         description,
         imageUrl,
       };
+
+      const result = {
+        title,
+        description,
+        imageUrl,
+      };
+
+      await kv.set(cacheKey, result, { ex: 3600 });
+
+      return result;
     }),
 });
 

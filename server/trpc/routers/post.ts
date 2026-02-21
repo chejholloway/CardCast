@@ -18,6 +18,7 @@ import { protectedProcedure, router } from '../base';
 import { log } from '../../log';
 import { getEnv } from '../../env';
 import { BskyAgent } from '@atproto/api';
+import sharp from 'sharp';
 
 /** Input schema for post creation */
 const postInputSchema = z.object({
@@ -156,10 +157,43 @@ export const postRouter = router({
           throw new Error(`Image fetch failed with status ${imgRes.status}`);
         }
 
-        const buffer = Buffer.from(await imgRes.arrayBuffer());
+        // Detect content type and map to supported formats
+        const contentType = imgRes.headers.get('content-type') || 'image/jpeg';
+        const mimeTypeMap: Record<string, string> = {
+          'image/jpeg': 'image/jpeg',
+          'image/jpg': 'image/jpeg',
+          'image/png': 'image/png',
+          'image/webp': 'image/webp',
+          'image/gif': 'image/gif',
+        };
+        const encoding = mimeTypeMap[contentType] || 'image/jpeg';
+
+        let arrayBuffer = await imgRes.arrayBuffer();
+        let buffer: Buffer = Buffer.from(new Uint8Array(arrayBuffer));
+
+        const maxSize = 1_000_000; // 1 MB
+        if (buffer.length > maxSize) {
+          log.info('Image too large, compressing', {
+            originalSize: buffer.length,
+            url: input.imageUrl,
+          });
+
+          buffer = await sharp(buffer as any)
+            .resize(1200, 630, { fit: 'inside', withoutEnlargement: true })
+            .jpeg({ quality: 85 })
+            .toBuffer();
+
+          if (buffer.length > maxSize) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: 'Image too large even after compression',
+            });
+          }
+        }
+
         const uploadRes = await withTimeout(
           agent.uploadBlob(buffer, {
-            encoding: 'image/jpeg',
+            encoding: encoding as never,
           } as never),
           10_000
         );

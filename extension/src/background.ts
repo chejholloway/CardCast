@@ -37,6 +37,65 @@ const queryClient = new QueryClient({
 });
 
 /**
+ * Check if JWT token is expired or expiring soon
+ * @param {string} jwt - JWT token to check
+ * @param {number} bufferMinutes - Minutes before expiry to consider expired (default: 5)
+ * @returns {boolean} True if token is expired or expiring soon
+ */
+const isTokenExpiring = (jwt: string, bufferMinutes = 5): boolean => {
+  try {
+    const payload = JSON.parse(atob(jwt.split('.')[1]));
+    const expiresAt = payload.exp * 1000; // Convert to milliseconds
+    return Date.now() > expiresAt - bufferMinutes * 60 * 1000;
+  } catch {
+    return true; // If we can't parse, assume expired
+  }
+};
+
+/**
+ * Check session and refresh if needed
+ * @returns {Promise<Session | null>} Refreshed session or null if refresh failed
+ */
+const checkAndRefreshSession = async (): Promise<{
+  accessJwt: string;
+  did: string;
+  handle: string;
+  refreshJwt: string;
+} | null> => {
+  const session = await chrome.storage.session.get(['bskySession']);
+  const bskySession = session.bskySession as
+    | {
+        accessJwt: string;
+        did: string;
+        handle: string;
+        refreshJwt: string;
+      }
+    | undefined;
+
+  if (!bskySession) return null;
+
+  // Check if token is expiring within 5 minutes
+  if (isTokenExpiring(bskySession.accessJwt)) {
+    try {
+      const refreshed = await backgroundClient.auth.refresh.mutate({
+        refreshJwt: bskySession.refreshJwt,
+        did: bskySession.did,
+        handle: bskySession.handle,
+      });
+
+      await chrome.storage.session.set({ bskySession: refreshed });
+      return refreshed;
+    } catch {
+      // Refresh failed, clear session
+      await chrome.storage.session.remove(['bskySession']);
+      return null;
+    }
+  }
+
+  return bskySession;
+};
+
+/**
  * Message types supported by the service worker
  *
  * @typedef {Object} MessageRequest
@@ -138,15 +197,7 @@ type MessageRequest =
         }
 
         if (message.type === 'CREATE_POST') {
-          const session = await chrome.storage.session.get(['bskySession']);
-          const bskySession = session.bskySession as
-            | {
-                accessJwt: string;
-                did: string;
-                handle: string;
-                refreshJwt: string;
-              }
-            | undefined;
+          const bskySession = await checkAndRefreshSession();
 
           if (!bskySession) {
             sendResponse({

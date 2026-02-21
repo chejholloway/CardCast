@@ -45,7 +45,7 @@ const statusOutputSchema = z.object({
 /**
  * Authentication Router
  *
- * Provides Bluesky login and session status endpoints.
+ * Provides Bluesky login, session refresh, and session status endpoints.
  * All procedures require the x-extension-secret header (protectedProcedure).
  */
 export const authRouter = router({
@@ -108,6 +108,78 @@ export const authRouter = router({
         refreshJwt,
       };
     }),
+
+  /**
+   * Refresh an expired Bluesky session using refresh token
+   *
+   * @procedure protectedProcedure (requires x-extension-secret header)
+   * @param {Object} input - Session refresh parameters
+   * @param {string} input.refreshJwt - Refresh JWT from previous session
+   * @param {string} input.did - User's DID
+   * @param {string} input.handle - User's handle
+   * @returns {AuthSession} New session object with refreshed tokens
+   * @throws {TRPCError} UNAUTHORIZED if refresh fails
+   *
+   * @example
+   * const refreshed = await trpc.auth.refresh.mutate({
+   *   refreshJwt: session.refreshJwt,
+   *   did: session.did,
+   *   handle: session.handle
+   * });
+   * // Returns: { did: '...', accessJwt: 'new-token', handle: '...', refreshJwt: 'new-refresh' }
+   */
+  refresh: protectedProcedure
+    .input(
+      z.object({
+        refreshJwt: z.string(),
+        did: z.string(),
+        handle: z.string(),
+      })
+    )
+    .output(sessionSchema)
+    .mutation(async ({ input }) => {
+      const env = getEnv();
+      const agent = new BskyAgent({ service: env.BLUESKY_SERVICE_URL });
+
+      try {
+        // Resume with refresh token
+        await agent.resumeSession({
+          refreshJwt: input.refreshJwt,
+          did: input.did,
+          handle: input.handle,
+          accessJwt: '', // Will be refreshed
+          active: true,
+        });
+
+        if (!agent.session) {
+          throw new Error('Session refresh failed');
+        }
+
+        log.info('Session refreshed successfully', {
+          handle: agent.session.handle,
+        });
+
+        return {
+          did: agent.session.did,
+          accessJwt: agent.session.accessJwt,
+          handle: agent.session.handle,
+          refreshJwt: agent.session.refreshJwt,
+        };
+      } catch (error) {
+        log.warn('Session refresh failed', {
+          handle: input.handle,
+          error:
+            error instanceof Error
+              ? error.stack || error.message
+              : JSON.stringify(error),
+        });
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Session expired, please login again',
+        });
+      }
+    }),
+
   /**
    * Get current authentication status
    *
