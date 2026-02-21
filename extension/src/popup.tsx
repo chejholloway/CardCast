@@ -19,6 +19,17 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { trpc, trpcClient } from './trpcClient';
 import { ErrorBoundary } from './ErrorBoundary';
+import { logSecurityEvent } from './securityLogger';
+
+// Utility function to validate a domain string
+const isValidDomain = (domain: string): boolean => {
+  try {
+    const url = new URL(`http://${domain}`);
+    return url.hostname === domain && !domain.includes('/');
+  } catch {
+    return false;
+  }
+};
 
 /**
  * Shared React Query client for the popup
@@ -93,6 +104,12 @@ const Popup: React.FC = () => {
     trpc.auth.status.useQuery();
   const loginMutation = trpc.auth.login.useMutation({
     onSuccess: () => refetchAuth(),
+    onError: (error: { message: any; data: { code: any } }) => {
+      logSecurityEvent('auth_failure', {
+        message: error.message,
+        code: error.data?.code,
+      });
+    },
   });
 
   // Accessibility live messages
@@ -134,13 +151,23 @@ const Popup: React.FC = () => {
    * No-op if domain already exists
    */
   const addDomain = () => {
-    if (newDomain && !domains.includes(newDomain)) {
-      const updated = [...domains, newDomain];
-      setDomains(updated);
-      chrome.storage.session.set({ allowedDomains: updated });
-      setNewDomain('');
-      setLiveMessage(`Domain added: ${newDomain}`);
+    if (!newDomain) {
+      setLiveMessage('Domain cannot be empty.');
+      return;
     }
+    if (!isValidDomain(newDomain)) {
+      setLiveMessage('Invalid domain format.');
+      return;
+    }
+    if (domains.includes(newDomain)) {
+      setLiveMessage(`Domain ${newDomain} already exists.`);
+      return;
+    }
+    const updated = [...domains, newDomain];
+    setDomains(updated);
+    chrome.storage.session.set({ allowedDomains: updated });
+    setNewDomain('');
+    setLiveMessage(`Domain added: ${newDomain}`);
   };
 
   /**

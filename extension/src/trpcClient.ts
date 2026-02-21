@@ -13,7 +13,6 @@
 
 import { createTRPCReact } from '@trpc/react-query';
 import { createTRPCClient, httpBatchLink } from '@trpc/client';
-import type { AppRouter } from './types';
 import { BACKEND_URL, EXTENSION_SHARED_SECRET } from './config';
 
 /**

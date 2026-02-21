@@ -25,12 +25,6 @@ const assets = [
   path.join('icons', 'icon-512.png'),
 ];
 
-function existsAny(relPath) {
-  const p1 = path.join(distSrc, relPath);
-  const p2 = path.join(distLegacy, relPath);
-  return fs.existsSync(p1) || fs.existsSync(p2);
-}
-
 let allPresent = true;
 for (const rel of assets) {
   const p1 = path.join(distSrc, rel);

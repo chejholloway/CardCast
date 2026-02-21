@@ -21,6 +21,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { trpc, trpcClient } from './trpcClient';
 import { motion } from 'framer-motion';
 import { ErrorBoundary } from './ErrorBoundary';
+import DOMPurify from 'dompurify';
+import { logSecurityEvent } from './securityLogger';
+
+// Utility function to sanitize HTML content
+const sanitizeHtml = (html: string) => DOMPurify.sanitize(html);
 
 /**
  * Shared React Query client for the content script
@@ -157,6 +162,10 @@ const LinkCardComposer: React.FC<{ url: string }> = ({ url }) => {
         if (!response?.ok) {
           // eslint-disable-next-line no-console
           console.error('Failed to create post', response?.error);
+          logSecurityEvent('other_security_event', {
+            type: 'create_post_failure',
+            details: response?.error,
+          });
         }
       }
     );
@@ -242,14 +251,16 @@ const LinkCardComposer: React.FC<{ url: string }> = ({ url }) => {
           transition={{ duration: 0.4 }}
         >
           <div className="flex-1">
-            <div className="text-sm font-semibold line-clamp-2">
-              {data.title}
-            </div>
+            <div
+              className="text-sm font-semibold line-clamp-2"
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(data.title) }}
+            ></div>
             <div
               className={`mt-1 text-xs line-clamp-3 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}
-            >
-              {data.description}
-            </div>
+              dangerouslySetInnerHTML={{
+                __html: sanitizeHtml(data.description),
+              }}
+            ></div>
             <div className="mt-2">
               <motion.button
                 type="button"

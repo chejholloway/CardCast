@@ -84,7 +84,7 @@ function parseArgs() {
       try {
         const json = JSON.parse(data);
         console.log('Body (parsed):', JSON.stringify(json, null, 2));
-      } catch (e) {
+      } catch {
         console.log('Body (raw):', data);
       }
     });

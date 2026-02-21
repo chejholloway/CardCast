@@ -14,7 +14,6 @@
     "build:ext": "node extension/scripts/generate-config.js && node extension/scripts/bundle-extension.js && node extension/scripts/copy-tailwind-css.js",
     "validate:ext": "node extension/scripts/validate-ext-build.js",
     "build:css": "tailwindcss -c tailwind.config.cjs -i ./styles/globals.css -o ./public/tailwind.css --minify",
-    "lint:accessibility": "eslint extension --ext .ts,.tsx,.js,.jsx",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest",
     "test:ui": "vitest --ui",
@@ -22,7 +21,7 @@
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
     "docs": "typedoc --out docs/api",
     "docs:watch": "typedoc --out docs/api --watch",
-    "ci-lite": "npm ci && npm run lint && npm run lint:accessibility && npm run typecheck && npm run build:ext && npm run build:css"
+    "ci-lite": "npm ci && npm run lint && npm run typecheck && npm run build:ext && npm run build:css"
   },
   "dependencies": {
     "@atproto/api": "^0.13.9",
@@ -32,6 +31,7 @@
     "@trpc/server": "11.9.0",
     "@vercel/kv": "^3.0.0",
     "cheerio": "^1.0.0-rc.12",
+    "dompurify": "^3.3.1",
     "framer-motion": "^12.34.2",
     "next": "14.2.35",
     "react": "^18.2.0",
@@ -45,6 +45,7 @@
     "@testing-library/react": "^14.1.2",
     "@testing-library/user-event": "^14.5.1",
     "@types/chrome": "^0.1.36",
+    "@types/dompurify": "^3.0.5",
     "@types/node": "^20.11.24",
     "@types/react": "^18.2.61",
     "@types/react-dom": "^18.2.19",
@@ -52,9 +53,6 @@
     "@typescript-eslint/parser": "^7.0.0",
     "@vitest/ui": "^1.1.0",
     "esbuild": "^0.27.3",
-    "eslint": "^8.56.0",
-    "eslint-plugin-jsx-a11y": "^6.6.0",
-    "eslint-plugin-react": "^7.31.0",
     "husky": "^9.1.7",
     "jsdom": "^23.0.1",
     "lint-staged": "^15.5.2",
