@@ -1,14 +1,13 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { crx } from '@crxjs/vite-plugin';
-import manifest from './manifest.json';
-import path from 'path';
+import manifest from './extension/manifest.json';
 
 export default defineConfig({
-  root: __dirname,
   plugins: [react(), crx({ manifest })],
   build: {
-    outDir: path.resolve(__dirname, 'dist'),
+    outDir: 'dist',
+    sourcemap: true,
     emptyOutDir: true,
   },
 });

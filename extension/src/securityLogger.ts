@@ -10,6 +10,7 @@ type SecurityEvent = {
     | 'csp_violation'
     | 'unauthorized_access'
     | 'storage_error'
+    | 'post_creation_failure'
     | 'other_security_event';
   details?: Record<string, any>;
   timestamp: string;
