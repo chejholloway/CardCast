@@ -29,5 +29,5 @@ export const renderWithProviders = (
   return render(ui, { wrapper: Wrapper, ...renderOptions });
 };
 
-export { screen } from '@testing-library/react';
+export { screen } from '@testing-library/dom';
 export { userEvent } from '@testing-library/user-event';
