@@ -19,9 +19,11 @@ export const renderWithProviders = (
   }: { queryClient?: QueryClient } & Omit<RenderOptions, 'wrapper'> = {}
 ) => {
   const Wrapper = ({ children }: { children: React.ReactNode }) => (
-    <trpc.Provider client={trpcClient} queryClient={queryClient}>
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    </trpc.Provider>
+    <QueryClientProvider client={queryClient}>
+      <trpc.Provider client={trpcClient} queryClient={queryClient}>
+        {children}
+      </trpc.Provider>
+    </QueryClientProvider>
   );
 
   return render(ui, { wrapper: Wrapper, ...renderOptions });
