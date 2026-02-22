@@ -10,7 +10,7 @@
     "start": "next start",
     "lint": "npx oxlint .",
     "lint:staged": "npx lint-staged",
-    "dev:ext": "vite -c extension/vite.config.mts",
+    "dev:ext": "vite -c extension/vite.config.ts",
     "build:ext": "vite build -c extension/vite.config.ts",
     "validate:ext": "node extension/scripts/validate-ext-build.js",
     "build:css": "tailwindcss -c tailwind.config.cjs -i ./styles/globals.css -o ./public/tailwind.css --minify",
