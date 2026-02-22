@@ -18,10 +18,10 @@ import { protectedProcedure, router } from '../base';
 import { log } from '../../log';
 import { getEnv } from '../../env';
 import { BskyAgent } from '@atproto/api';
-import sharp from 'sharp';
+import { uploadImage } from './uploadImage';
 
-/** Input schema for post creation */
-const postInputSchema = z.object({
+/** Post content details */
+const postContentSchema = z.object({
   /** Post text content (1-3000 characters) */
   text: z.string().min(1).max(3000),
   /** URL to embed in the post */
@@ -32,6 +32,10 @@ const postInputSchema = z.object({
   description: z.string().min(1).max(1000),
   /** Open Graph image URL to download and attach */
   imageUrl: z.string().url(),
+});
+
+/** Bluesky authentication credentials */
+const authSchema = z.object({
   /** Bluesky access JWT (obtained from auth.login) */
   accessJwt: z.string().min(10),
   /** User's DID (Decentralized Identifier) */
@@ -42,6 +46,9 @@ const postInputSchema = z.object({
   refreshJwt: z.string().min(1),
 });
 
+/** Input schema for post creation, combining content and auth */
+const postInputSchema = postContentSchema.merge(authSchema);
+
 /** Output schema for post creation */
 const postOutputSchema = z.object({
   /** Always true on success */
@@ -51,42 +58,6 @@ const postOutputSchema = z.object({
   /** Whether the thumbnail image was successfully uploaded */
   thumbUploaded: z.boolean(),
 });
-
-/** Realistic browser User-Agent for external requests */
-const realisticHeaders: Record<string, string> = {
-  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-};
-
-/**
- * Wrap a promise with a timeout
- * @template T
- * @param {Promise<T>} promise - Promise to wrap
- * @param {number} ms - Timeout in milliseconds
- * @returns {Promise<T>} Promise that rejects if timeout exceeded
- * @throws {TRPCError} INTERNAL_SERVER_ERROR if timeout exceeded
- */
-const withTimeout = async <T>(promise: Promise<T>, ms: number): Promise<T> => {
-  let timeoutId: NodeJS.Timeout | undefined;
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    timeoutId = setTimeout(() => {
-      reject(
-        new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Request timed out',
-        })
-      );
-    }, ms);
-  });
-
-  try {
-    const result = await Promise.race([promise, timeoutPromise]);
-    if (timeoutId) clearTimeout(timeoutId);
-    return result;
-  } catch (err) {
-    if (timeoutId) clearTimeout(timeoutId);
-    throw err;
-  }
-};
 
 /**
  * Bluesky Post Creation Router
@@ -107,7 +78,7 @@ export const postRouter = router({
    * @param {PostCreateInput} input - Post and authentication details
    * @returns {PostCreateOutput} Created post URI and upload status
    *
-   * @throws {TRPCError} INTERNAL_SERVER_ERROR if post creation fails
+   * @throws {TRPCError} INTERNAL_SERVER_ERROR if post creation or image upload fails
    *
    * @example
    * const result = await trpc.post.create.mutate({
@@ -124,9 +95,6 @@ export const postRouter = router({
    * //   uri: 'at://did:plc:.../app.bsky.feed.post/...',
    * //   thumbUploaded: true
    * // }
-   *
-   * @timeouts Image fetch (10s), post creation (10s)
-   * @fallback If image upload fails, creates text-only post with thumbUploaded: false
    */
   create: protectedProcedure
     .input(postInputSchema)
@@ -144,74 +112,9 @@ export const postRouter = router({
         active: true,
       });
 
-      let blobRef: unknown | undefined;
-      let thumbUploaded = false;
-
-      try {
-        const imgRes = await withTimeout(
-          fetch(input.imageUrl, { headers: realisticHeaders }),
-          10_000
-        );
-
-        if (!imgRes.ok) {
-          throw new Error(`Image fetch failed with status ${imgRes.status}`);
-        }
-
-        // Detect content type and map to supported formats
-        const contentType = imgRes.headers.get('content-type') || 'image/jpeg';
-        const mimeTypeMap: Record<string, string> = {
-          'image/jpeg': 'image/jpeg',
-          'image/jpg': 'image/jpeg',
-          'image/png': 'image/png',
-          'image/webp': 'image/webp',
-          'image/gif': 'image/gif',
-        };
-        const encoding = mimeTypeMap[contentType] || 'image/jpeg';
-
-        let arrayBuffer = await imgRes.arrayBuffer();
-        let buffer: Buffer = Buffer.from(new Uint8Array(arrayBuffer));
-
-        const maxSize = 1_000_000; // 1 MB
-        if (buffer.length > maxSize) {
-          log.info('Image too large, compressing', {
-            originalSize: buffer.length,
-            url: input.imageUrl,
-          });
-
-          buffer = await sharp(buffer as any)
-            .resize(1200, 630, { fit: 'inside', withoutEnlargement: true })
-            .jpeg({ quality: 85 })
-            .toBuffer();
-
-          if (buffer.length > maxSize) {
-            throw new TRPCError({
-              code: 'BAD_REQUEST',
-              message: 'Image too large even after compression',
-            });
-          }
-        }
-
-        const uploadRes = await withTimeout(
-          agent.uploadBlob(buffer, {
-            encoding: encoding as never,
-          } as never),
-          10_000
-        );
-
-        // Shape: { data: { blob: { ref: {...}, mimeType, size } } }
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        blobRef = (uploadRes as any).data.blob;
-        thumbUploaded = true;
-      } catch (error) {
-        thumbUploaded = false;
-        log.warn('Thumbnail upload failed, falling back to no-thumb post', {
-          error:
-            error instanceof Error
-              ? error.stack || error.message
-              : JSON.stringify(error),
-          imageUrl: input.imageUrl,
-        });
-      }
+      // uploadImage handles fetch, compression, and upload.
+      // It returns the blob on success or undefined on failure.
+      const blobRef = await uploadImage(agent, input.imageUrl);
 
       try {
         const record: Record<string, unknown> = {
@@ -224,22 +127,18 @@ export const postRouter = router({
               uri: input.url,
               title: input.title,
               description: input.description,
-              ...(thumbUploaded && blobRef ? { thumb: blobRef } : {}),
+              ...(blobRef ? { thumb: blobRef } : {}),
             },
           },
         };
 
-        const res = await withTimeout(
-          agent.api.com.atproto.repo.createRecord({
-            repo: input.did,
-            collection: 'app.bsky.feed.post',
-            record,
-          } as never),
-          10_000
-        );
+        const res = await agent.api.com.atproto.repo.createRecord({
+          repo: input.did,
+          collection: 'app.bsky.feed.post',
+          record,
+        });
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const uri = (res as any).uri as string | undefined;
+        const uri = res.data.uri;
         if (!uri) {
           throw new Error('Missing URI from createRecord response');
         }
@@ -247,7 +146,7 @@ export const postRouter = router({
         return {
           success: true,
           uri,
-          thumbUploaded,
+          thumbUploaded: !!blobRef,
         };
       } catch (error) {
         log.error('Failed to create Bluesky post', {

@@ -14,3 +14,9 @@ export const sessionSchema = z.object({
 
 /** Type for authenticated session object */
 export type AuthSession = z.infer<typeof sessionSchema>;
+
+export type OgData = {
+  title: string;
+  description: string;
+  imageUrl: string | null;
+};

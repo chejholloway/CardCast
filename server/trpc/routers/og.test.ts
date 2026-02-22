@@ -6,6 +6,21 @@ describe('ogRouter.fetch', () => {
     // Reset MSW handlers between tests - handled by vitest.setup.ts
   });
 
+  it('should return correct OG data on successful fetch', async () => {
+    const caller = createTestCaller({
+      secret: process.env.EXTENSION_SHARED_SECRET,
+    });
+    const result = await caller.og.fetch({
+      url: 'https://success.com',
+    });
+
+    expect(result).toEqual({
+      title: 'Mocked Title',
+      description: 'Mocked Description',
+      imageUrl: 'https://example.com/mocked-image.jpg',
+    });
+  });
+
   it('should fetch OG metadata for allowed domain', async () => {
     const caller = createTestCaller({
       secret: process.env.EXTENSION_SHARED_SECRET,

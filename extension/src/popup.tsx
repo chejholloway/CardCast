@@ -20,7 +20,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { trpc, trpcClient } from './trpcClient';
 import { ErrorBoundary } from './ErrorBoundary';
 import { logSecurityEvent } from './securityLogger';
-import type { AuthSession } from './types';
+import { useSession } from './useSession';
 import { PostCreationModal } from './PostCreationModal';
 import { TRPCClientError } from '@trpc/client';
 
@@ -103,13 +103,29 @@ const Popup: React.FC = () => {
   const [newDomain, setNewDomain] = useState('');
   const [liveMessage, setLiveMessage] = useState<string>('');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [session, setSession] = useState<AuthSession | null>(null);
+  const { session, loading } = useSession();
+
+  useEffect(() => {
+    const handleErrors = (event: PromiseRejectionEvent | ErrorEvent) => {
+      const error = 'reason' in event ? event.reason : event.error;
+      logSecurityEvent('other_security_event', {
+        message: error?.message ?? 'Unknown error',
+        stack: error?.stack ?? '',
+      });
+    };
+
+    window.addEventListener('unhandledrejection', handleErrors);
+    window.addEventListener('error', handleErrors);
+
+    return () => {
+      window.removeEventListener('unhandledrejection', handleErrors);
+      window.removeEventListener('error', handleErrors);
+    };
+  }, []);
 
   const loginMutation = trpc.auth.login.useMutation({
-    onSuccess: (data: AuthSession) => {
-      chrome.storage.session.set({ session: data }, () => {
-        setSession(data);
-      });
+    onSuccess: () => {
+      queryClient.invalidateQueries();
     },
     onError: (error: TRPCClientError<any>) => {
       logSecurityEvent('auth_failure', {
@@ -121,37 +137,9 @@ const Popup: React.FC = () => {
 
   const logoutMutation = trpc.auth.logout.useMutation({
     onSuccess: () => {
-      chrome.storage.session.remove('session', () => {
-        setSession(null);
-      });
+      queryClient.invalidateQueries();
     },
   });
-
-  // Try to resume session on component mount
-  useEffect(() => {
-    chrome.storage.session.get(
-      'session',
-      (result: { session?: AuthSession }) => {
-        if (result.session) {
-          setSession(result.session);
-          // We have a session, let's try to resume it in the background
-          trpcClient.auth.resumeSession.mutate(result.session, {
-            onSuccess: (data: AuthSession) => {
-              chrome.storage.session.set({ session: data }, () => {
-                setSession(data);
-              });
-            },
-            onError: () => {
-              // Session is invalid, clear it
-              chrome.storage.session.remove('session', () => {
-                setSession(null);
-              });
-            },
-          });
-        }
-      }
-    );
-  }, []);
 
   // Accessibility live messages
   useEffect(() => {
