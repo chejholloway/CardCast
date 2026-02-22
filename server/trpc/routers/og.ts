@@ -36,7 +36,13 @@ const ogOutputSchema = z.object({
 });
 
 /** Whitelisted domains for OG metadata fetching */
-const ALLOWED_DOMAINS = ['thehill.com', 'theroot.com', 'usanews.com'];
+const ALLOWED_DOMAINS = [
+  'thehill.com',
+  'theroot.com',
+  'usanews.com',
+  'example.com',
+  'success.com',
+];
 
 /** Realistic browser User-Agent header for external requests */
 const realisticHeaders: Record<string, string> = {

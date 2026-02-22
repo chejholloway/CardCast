@@ -1,26 +1,41 @@
 import { http, HttpResponse } from 'msw';
 
 export const handlers = [
-  http.get('https://trpc.io/og.fetch', ({ request }) => {
-    const url = new URL(request.url);
-    const urlParam = url.searchParams.get('url');
+  http.post('http://localhost:3000/api/trpc/og.fetch', async ({ request }) => {
+    const body = (await request.json()) as { '0': { json: { url: string } } };
+    const url = body['0'].json.url;
 
-    if (urlParam === 'https://error.com') {
-      return new HttpResponse(null, {
-        status: 500,
-        statusText: 'Internal Server Error',
-      });
+    if (url === 'https://error.com') {
+      return HttpResponse.json([
+        {
+          error: {
+            json: {
+              message: 'fetch failed',
+              code: -32603,
+              data: {
+                code: 'INTERNAL_SERVER_ERROR',
+                httpStatus: 500,
+                path: 'og.fetch',
+              },
+            },
+          },
+        },
+      ]);
     }
 
-    return HttpResponse.json({
-      result: {
-        data: {
-          title: 'Mocked Title',
-          description: 'Mocked Description',
-          imageUrl: 'https://example.com/mocked-image.jpg',
+    return HttpResponse.json([
+      {
+        result: {
+          data: {
+            json: {
+              title: 'Mocked Title',
+              description: 'Mocked Description',
+              imageUrl: 'https://example.com/mocked-image.jpg',
+            },
+          },
         },
       },
-    });
+    ]);
   }),
 
   http.post(

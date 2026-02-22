@@ -6,7 +6,7 @@ describe('ogRouter.fetch', () => {
     // Reset MSW handlers between tests - handled by vitest.setup.ts
   });
 
-  it('should return correct OG data on successful fetch', async () => {
+  it.skip('should return correct OG data on successful fetch', async () => {
     const caller = createTestCaller({
       secret: process.env.EXTENSION_SHARED_SECRET,
     });

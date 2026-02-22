@@ -12,7 +12,7 @@
  */
 
 import { createTRPCReact } from '@trpc/react-query';
-import { createTRPCClient, httpBatchLink } from '@trpc/client';
+import { createTRPCClient, httpBatchLink, httpLink } from '@trpc/client';
 import { BACKEND_URL, EXTENSION_SHARED_SECRET } from './config';
 
 /**
