@@ -50,11 +50,9 @@ const queryClient = new QueryClient({
 const TRPCProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => (
-  <QueryClientProvider client={queryClient}>
-    <trpc.Provider client={trpcClient} queryClient={queryClient}>
-      {children}
-    </trpc.Provider>
-  </QueryClientProvider>
+  <trpc.Provider client={trpcClient} queryClient={queryClient}>
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  </trpc.Provider>
 );
 
 /**

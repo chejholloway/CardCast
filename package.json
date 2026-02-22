@@ -13,7 +13,7 @@
     "dev:ext": "vite -c extension/vite.config.ts",
     "build:ext": "vite build -c extension/vite.config.ts",
     "validate:ext": "node extension/scripts/validate-ext-build.js",
-    "build:css": "tailwindcss -c tailwind.config.cjs -i ./styles/globals.css -o ./public/tailwind.css --minify",
+    "build:css": "tailwindcss -c tailwind.config.cjs -i ./styles/globals.css -o ./extension/styles/tailwind.css --minify",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest",
     "test:ui": "vitest --ui",
@@ -21,7 +21,7 @@
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
     "docs": "typedoc --out docs/api",
     "docs:watch": "typedoc --out docs/api --watch",
-    "ci-lite": "npm ci && npm run lint && npm run typecheck && npm run build:ext && npm run build:css"
+    "ci-lite": "npm ci && npm run lint && npm run typecheck && npm run build:css && npm run build:ext"
   },
   "dependencies": {
     "@atproto/api": "^0.13.9",
@@ -35,7 +35,7 @@
     "dompurify": "^3.3.1",
     "framer-motion": "^12.34.2",
     "lodash-es": "^4.17.23",
-    "next": "14.2.35",
+    "next": "^16.1.6",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "sharp": "^0.34.5",
@@ -52,13 +52,13 @@
     "@types/react": "^18.2.61",
     "@types/react-dom": "^18.2.19",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
-    "@typescript-eslint/parser": "^7.0.0",
+    "@typescript-eslint/parser": "^6.15.0",
     "@vitejs/plugin-react": "^5.1.4",
-    "@vitest/ui": "^1.6.0",
+    "@vitest/ui": "^4.0.18",
     "esbuild": "^0.27.3",
-    "eslint": "^8.56.0",
-    "eslint-plugin-jsx-a11y": "^6.6.0",
-    "eslint-plugin-react": "^7.31.0",
+    "eslint": "^10.0.1",
+    "eslint-plugin-jsx-a11y": "^6.4.1",
+    "eslint-plugin-react": "^7.22.0",
     "husky": "^9.1.7",
     "jsdom": "^23.0.1",
     "lint-staged": "^15.5.2",
@@ -66,13 +66,13 @@
     "oxlint": "^1.49.0",
     "postcss": "^8.4.38",
     "prettier": "^3.2.5",
-    "puppeteer": "^21.6.1",
+    "puppeteer": "^24.37.5",
     "tailwindcss": "^3.4.3",
-    "typedoc": "^0.28.17",
-    "typedoc-plugin-markdown": "^4.10.0",
+    "typedoc": "^0.0.4",
+    "typedoc-plugin-markdown": "^4.4.2",
     "typescript": "^5.4.2",
     "vite": "^7.3.1",
-    "vitest": "^1.6.0"
+    "vitest": "^4.0.18"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [

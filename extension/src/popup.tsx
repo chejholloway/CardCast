@@ -39,11 +39,11 @@ const init = async () => {
     });
 
     root.render(
-      <QueryClientProvider client={queryClient}>
-        <trpc.Provider client={trpcClient} queryClient={queryClient}>
+      <trpc.Provider client={trpcClient} queryClient={queryClient}>
+        <QueryClientProvider client={queryClient}>
           <MinimalPopup />
-        </trpc.Provider>
-      </QueryClientProvider>
+        </QueryClientProvider>
+      </trpc.Provider>
     );
   }
 };

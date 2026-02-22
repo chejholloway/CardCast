@@ -14,7 +14,7 @@
 import { createTRPCReact } from '@trpc/react-query';
 import { createTRPCClient, httpBatchLink } from '@trpc/client';
 import { BACKEND_URL, EXTENSION_SHARED_SECRET } from './config';
-import type { AppRouter } from '@server/trpc/router';
+import type { AppRouter } from '../../server/trpc/router';
 
 /**
  * tRPC React client instance
