@@ -1,5 +1,16 @@
-// Local type declarations for extension build.
-// This file provides lightweight typings for shared tRPC router types
-// without depending on the server codebase. This keeps the extension
-// compilation isolated to its own rootDir.
-export type AppRouter = any;
+import { z } from 'zod';
+
+/** Session object returned after successful login */
+export const sessionSchema = z.object({
+  /** User's Decentralized Identifier (DID) */
+  did: z.string(),
+  /** JWT token for authenticated API requests to Bluesky */
+  accessJwt: z.string(),
+  /** User's Bluesky handle */
+  handle: z.string(),
+  /** JWT token for refreshing the session */
+  refreshJwt: z.string(),
+});
+
+/** Type for authenticated session object */
+export type AuthSession = z.infer<typeof sessionSchema>;

@@ -142,12 +142,10 @@ export const authRouter = router({
       const agent = new BskyAgent({ service: env.BLUESKY_SERVICE_URL });
 
       try {
-        // Resume with refresh token
+        // Resume with refresh token. The accessJwt will be ignored and a new one fetched.
         await agent.resumeSession({
-          refreshJwt: input.refreshJwt,
-          did: input.did,
-          handle: input.handle,
-          accessJwt: '', // Will be refreshed
+          ...input,
+          accessJwt: '', // Ignored by resume, but required by type
           active: true,
         });
 
@@ -202,6 +200,75 @@ export const authRouter = router({
       loggedIn: false,
       session: null,
     };
+  }),
+
+  /**
+   * Resume a Bluesky session from stored session data
+   *
+   * @procedure protectedProcedure (requires x-extension-secret header)
+   * @param {AuthSession} input - Stored session object
+   * @returns {AuthSession} New session object with refreshed tokens
+   * @throws {TRPCError} UNAUTHORIZED if resume fails
+   */
+  resumeSession: protectedProcedure
+    .input(sessionSchema)
+    .output(sessionSchema)
+    .mutation(async ({ input }) => {
+      const env = getEnv();
+      const agent = new BskyAgent({
+        service: env.BLUESKY_SERVICE_URL,
+        persistSession: (_evt, session) => {
+          // TODO: This is where we'd persist the session to chrome.storage.session
+          // For now, we'll just log it
+          log.info('Session persisted', { session });
+        },
+      });
+
+      try {
+        await agent.resumeSession({ ...input, active: true });
+
+        if (!agent.session) {
+          throw new Error('Session resume failed');
+        }
+
+        log.info('Session resumed successfully', {
+          handle: agent.session.handle,
+        });
+
+        return {
+          did: agent.session.did,
+          accessJwt: agent.session.accessJwt,
+          handle: agent.session.handle,
+          refreshJwt: agent.session.refreshJwt,
+        };
+      } catch (error) {
+        log.warn('Session resume failed', {
+          handle: input.handle,
+          error:
+            error instanceof Error
+              ? error.stack || error.message
+              : JSON.stringify(error),
+        });
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Session expired, please login again',
+        });
+      }
+    }),
+
+  /**
+   * Logout from Bluesky
+   *
+   * This is a placeholder as the backend is stateless. The extension is
+   * responsible for clearing its own session storage.
+   *
+   * @procedure protectedProcedure (requires x-extension-secret header)
+   * @returns {object} Success status
+   */
+  logout: protectedProcedure.mutation(() => {
+    // The backend is stateless, so logout is a client-side operation.
+    // The extension should clear its session storage.
+    return { success: true };
   }),
 });
 

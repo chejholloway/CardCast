@@ -20,6 +20,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { trpc, trpcClient } from './trpcClient';
 import { ErrorBoundary } from './ErrorBoundary';
 import { logSecurityEvent } from './securityLogger';
+import type { AuthSession } from './types';
+import { PostCreationModal } from './PostCreationModal';
+import { TRPCClientError } from '@trpc/client';
 
 // Utility function to validate a domain string
 const isValidDomain = (domain: string): boolean => {
@@ -99,30 +102,68 @@ const Popup: React.FC = () => {
   const [domains, setDomains] = useState<string[]>([]);
   const [newDomain, setNewDomain] = useState('');
   const [liveMessage, setLiveMessage] = useState<string>('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [session, setSession] = useState<AuthSession | null>(null);
 
-  const { data: authStatus, refetch: refetchAuth } =
-    trpc.auth.status.useQuery();
   const loginMutation = trpc.auth.login.useMutation({
-    onSuccess: () => refetchAuth(),
-    onError: (error: { message: any; data: { code: any } }) => {
+    onSuccess: (data: AuthSession) => {
+      chrome.storage.session.set({ session: data }, () => {
+        setSession(data);
+      });
+    },
+    onError: (error: TRPCClientError<any>) => {
       logSecurityEvent('auth_failure', {
         message: error.message,
-        code: error.data?.code,
+        code: error.shape?.code,
       });
     },
   });
+
+  const logoutMutation = trpc.auth.logout.useMutation({
+    onSuccess: () => {
+      chrome.storage.session.remove('session', () => {
+        setSession(null);
+      });
+    },
+  });
+
+  // Try to resume session on component mount
+  useEffect(() => {
+    chrome.storage.session.get(
+      'session',
+      (result: { session?: AuthSession }) => {
+        if (result.session) {
+          setSession(result.session);
+          // We have a session, let's try to resume it in the background
+          trpcClient.auth.resumeSession.mutate(result.session, {
+            onSuccess: (data: AuthSession) => {
+              chrome.storage.session.set({ session: data }, () => {
+                setSession(data);
+              });
+            },
+            onError: () => {
+              // Session is invalid, clear it
+              chrome.storage.session.remove('session', () => {
+                setSession(null);
+              });
+            },
+          });
+        }
+      }
+    );
+  }, []);
 
   // Accessibility live messages
   useEffect(() => {
     if (loginMutation.isPending) {
       setLiveMessage('Signing in to Bluesky');
-    } else if (authStatus?.loggedIn) {
-      const h = authStatus?.session?.handle ?? '';
+    } else if (session) {
+      const h = session?.handle ?? '';
       setLiveMessage(h ? `Logged in as @${h}` : 'Logged in');
-    } else if (authStatus) {
+    } else {
       setLiveMessage('Not logged in');
     }
-  }, [loginMutation.isPending, authStatus]);
+  }, [loginMutation.isPending, session]);
 
   /**
    * Load allowed domains from chrome.storage.session on component mount
@@ -180,8 +221,8 @@ const Popup: React.FC = () => {
     setLiveMessage(`Domain removed: ${domain}`);
   };
 
-  const loggedIn = authStatus?.loggedIn ?? false;
-  const handle = authStatus?.session?.handle;
+  const loggedIn = !!session;
+  const handle = session?.handle;
 
   return (
     <div
@@ -202,14 +243,33 @@ const Popup: React.FC = () => {
         </div>
       )}
       {loggedIn ? (
-        <div className="space-y-1 mb-4">
-          <div>
-            Logged in as <span className="font-medium">@{handle}</span>
+        <div className="space-y-4">
+          <div className="space-y-1">
+            <div>
+              Logged in as <span className="font-medium">@{handle}</span>
+            </div>
+            <p className="text-xs text-slate-400">
+              You can now create posts with rich link cards.
+            </p>
           </div>
-          <p className="text-xs text-slate-400">
-            You can now paste supported links in the Bluesky composer to post
-            with rich cards.
-          </p>
+          <div className="flex flex-col space-y-2">
+            <button
+              aria-label="Create a new post"
+              type="button"
+              className="w-full rounded bg-sky-600 py-2 text-sm font-medium hover:bg-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500"
+              onClick={() => setIsModalOpen(true)}
+            >
+              Create Post
+            </button>
+            <button
+              aria-label="Sign out of Bluesky"
+              type="button"
+              className="w-full rounded bg-slate-700 py-2 text-sm font-medium hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-500"
+              onClick={() => logoutMutation.mutate()}
+            >
+              Logout
+            </button>
+          </div>
         </div>
       ) : (
         <div className="space-y-2 mb-4">
@@ -303,6 +363,10 @@ const Popup: React.FC = () => {
           Open Bluesky
         </a>
       </div>
+
+      {isModalOpen && (
+        <PostCreationModal onClose={() => setIsModalOpen(false)} />
+      )}
     </div>
   );
 };
