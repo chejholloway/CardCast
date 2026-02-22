@@ -10,7 +10,8 @@
     "start": "next start",
     "lint": "npx oxlint .",
     "lint:staged": "npx lint-staged",
-    "build:ext": "node extension/scripts/generate-config.js && node extension/scripts/bundle-extension.js && node extension/scripts/copy-tailwind-css.js",
+    "dev:ext": "vite -c extension/vite.config.mts",
+    "build:ext": "vite build -c extension/vite.config.ts",
     "validate:ext": "node extension/scripts/validate-ext-build.js",
     "build:css": "tailwindcss -c tailwind.config.cjs -i ./styles/globals.css -o ./public/tailwind.css --minify",
     "typecheck": "tsc -p tsconfig.json",
@@ -50,6 +51,7 @@
     "@types/react-dom": "^18.2.19",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
+    "@vitejs/plugin-react": "^5.1.4",
     "@vitest/ui": "^1.6.0",
     "esbuild": "^0.27.3",
     "eslint": "^8.56.0",
@@ -67,6 +69,8 @@
     "typedoc": "^0.28.17",
     "typedoc-plugin-markdown": "^4.10.0",
     "typescript": "^5.4.2",
+    "vite": "^7.3.1",
+    "vite-plugin-crx-mv3": "^0.0.0",
     "vitest": "^1.6.0"
   },
   "lint-staged": {

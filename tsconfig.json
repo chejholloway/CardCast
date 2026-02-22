@@ -26,7 +26,8 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "dist/types/**/*.ts",
-    "vitest.config.tsm"
+    "vitest.config.tsm",
+    "extension/vite.config.mts"
   ],
   "exclude": ["node_modules", "extension/dist"]
 }
