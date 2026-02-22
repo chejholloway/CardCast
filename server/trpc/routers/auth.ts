@@ -13,6 +13,7 @@ import { BskyAgent } from '@atproto/api';
 import { protectedProcedure, router } from '../base';
 import { getEnv } from '../../env';
 import { log } from '../../log';
+import { deleteSession, getSession, setSession } from '../../lib/session';
 
 /** Input schema for Bluesky login: handle/email and app password */
 const loginInputSchema = z.object({
@@ -101,12 +102,16 @@ export const authRouter = router({
 
       const { did, accessJwt, handle, refreshJwt } = agent.session;
 
-      return {
+      const session: AuthSession = {
         did,
         accessJwt,
         handle,
         refreshJwt,
       };
+
+      await setSession(did, session);
+
+      return session;
     }),
 
   /**
@@ -157,12 +162,16 @@ export const authRouter = router({
           handle: agent.session.handle,
         });
 
-        return {
+        const session: AuthSession = {
           did: agent.session.did,
           accessJwt: agent.session.accessJwt,
           handle: agent.session.handle,
           refreshJwt: agent.session.refreshJwt,
         };
+
+        await setSession(session.did, session);
+
+        return session;
       } catch (error) {
         log.warn('Session refresh failed', {
           handle: input.handle,
@@ -193,14 +202,19 @@ export const authRouter = router({
    * const status = await trpc.auth.status.query();
    * // Returns: { loggedIn: false, session: null }
    */
-  status: protectedProcedure.output(statusOutputSchema).query(() => {
-    // Stateless backend: the extension is responsible for storing session.
-    // This endpoint exists so the popup can show a consistent shape.
-    return {
-      loggedIn: false,
-      session: null,
-    };
-  }),
+  status: protectedProcedure
+    .input(z.object({ did: z.string().optional() }))
+    .output(statusOutputSchema)
+    .query(async ({ input }) => {
+      if (!input.did) {
+        return { loggedIn: false, session: null };
+      }
+      const session = await getSession(input.did);
+      return {
+        loggedIn: !!session,
+        session,
+      };
+    }),
 
   /**
    * Resume a Bluesky session from stored session data
@@ -218,9 +232,9 @@ export const authRouter = router({
       const agent = new BskyAgent({
         service: env.BLUESKY_SERVICE_URL,
         persistSession: (_evt, session) => {
-          // TODO: This is where we'd persist the session to chrome.storage.session
-          // For now, we'll just log it
-          log.info('Session persisted', { session });
+          if (session) {
+            setSession(session.did, session as AuthSession);
+          }
         },
       });
 
@@ -265,11 +279,12 @@ export const authRouter = router({
    * @procedure protectedProcedure (requires x-extension-secret header)
    * @returns {object} Success status
    */
-  logout: protectedProcedure.mutation(() => {
-    // The backend is stateless, so logout is a client-side operation.
-    // The extension should clear its session storage.
-    return { success: true };
-  }),
+  logout: protectedProcedure
+    .input(z.object({ did: z.string() }))
+    .mutation(async ({ input }) => {
+      await deleteSession(input.did);
+      return { success: true };
+    }),
 });
 
 /** Type for auth.login input parameters */
