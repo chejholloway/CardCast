@@ -14,6 +14,7 @@
 import { createTRPCReact } from '@trpc/react-query';
 import { createTRPCClient, httpBatchLink } from '@trpc/client';
 import { BACKEND_URL, EXTENSION_SHARED_SECRET } from './config';
+import type { AppRouter } from '@server/trpc/router';
 
 /**
  * tRPC React client instance
@@ -27,7 +28,7 @@ import { BACKEND_URL, EXTENSION_SHARED_SECRET } from './config';
  * const { data } = trpc.auth.status.useQuery();
  * const loginMutation = trpc.auth.login.useMutation();
  */
-export const trpc: any = createTRPCReact<any>();
+export const trpc = createTRPCReact<AppRouter>();
 
 /**
  * Configured tRPC client with httpBatchLink
@@ -47,7 +48,7 @@ export const trpc: any = createTRPCReact<any>();
 // runtime-provided factory from the React helpers. This ensures we
 // stay compatible with the typings when the AppRouter is loosely typed
 // (AppRouter is intentionally very permissive in this extension).
-export const trpcClient: any = createTRPCClient<any>({
+export const trpcClient = createTRPCClient<AppRouter>({
   links: [
     httpBatchLink({
       url: `${BACKEND_URL}/api/trpc`,
@@ -63,7 +64,7 @@ export const trpcClient: any = createTRPCClient<any>({
 /**
  * Vanilla tRPC client for non-React environments (like background service worker)
  */
-export const backgroundClient: any = createTRPCClient<any>({
+export const backgroundClient = createTRPCClient<AppRouter>({
   links: [
     httpBatchLink({
       url: `${BACKEND_URL}/api/trpc`,

@@ -4,7 +4,6 @@
 
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const MinimalPopup: React.FC = () => {
   return (
@@ -24,27 +23,11 @@ const MinimalPopup: React.FC = () => {
   );
 };
 
-const init = async () => {
+const init = () => {
   const container = document.getElementById('root');
   if (container) {
     const root = createRoot(container);
-    const { trpc, trpcClient } = await import('./trpcClient');
-    const queryClient = new QueryClient({
-      defaultOptions: {
-        queries: {
-          retry: 2,
-          retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10_000),
-        },
-      },
-    });
-
-    root.render(
-      <QueryClientProvider client={queryClient}>
-        <trpc.Provider client={trpcClient} queryClient={queryClient}>
-          <MinimalPopup />
-        </trpc.Provider>
-      </QueryClientProvider>
-    );
+    root.render(<MinimalPopup />);
   }
 };
 

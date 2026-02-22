@@ -42,15 +42,7 @@ const queryClient = new QueryClient({
  *   <Popup />
  * </TRPCProvider>
  */
-const TRPCProvider = ({ children }) =>
-  _jsx(QueryClientProvider, {
-    client: queryClient,
-    children: _jsx(trpc.Provider, {
-      client: trpcClient,
-      queryClient: queryClient,
-      children: children,
-    }),
-  });
+
 /**
  * Main popup UI component
  *
@@ -89,16 +81,16 @@ const Popup = () => {
     onSuccess: () => refetchAuth(),
   });
   // Debugging: profile getProfile mutation and debug state
-  const profileMutation = trpc.profile?.getProfile?.useMutation({
-    onSuccess: (data) => {
-      setProfileDebug({
-        endpoint: 'https://bsky.app/xrpc/app.bsky.actor.getProfile',
-        actor: authStatus?.session?.did ?? '',
-        status: 200,
-        responsePreview: JSON.stringify(data, null, 2).slice(0, 1000),
-      });
-    },
-  });
+  // const profileMutation = trpc.profile?.getProfile?.useMutation({
+  //   onSuccess: (data) => {
+  //     setProfileDebug({
+  //       endpoint: 'https://bsky.app/xrpc/app.bsky.actor.getProfile',
+  //       actor: authStatus?.session?.did ?? '',
+  //       status: 200,
+  //       responsePreview: JSON.stringify(data, null, 2).slice(0, 1000),
+  //     });
+  //   },
+  // });
   // Accessibility live messages
   useEffect(() => {
     if (loginMutation.isPending) {
@@ -130,18 +122,18 @@ const Popup = () => {
   const onLogin = () => {
     loginMutation.mutate({ identifier, appPassword });
   };
-  const canFetchProfile =
-    loggedIn &&
-    Boolean(authStatus?.session?.did) &&
-    Boolean(authStatus?.session?.accessJwt);
-  const fetchProfile = () => {
-    if (!canFetchProfile) return;
-    // Use the current DID and accessJwt from the session
-    profileMutation.mutate({
-      actor: authStatus.session.did,
-      accessJwt: authStatus.session.accessJwt,
-    });
-  };
+  // const canFetchProfile =
+  //   loggedIn &&
+  //   Boolean(authStatus?.session?.did) &&
+  //   Boolean(authStatus?.session?.accessJwt);
+  // const fetchProfile = () => {
+  //   if (!canFetchProfile) return;
+  //   // Use the current DID and accessJwt from the session
+  //   profileMutation.mutate({
+  //     actor: authStatus.session.did,
+  //     accessJwt: authStatus.session.accessJwt,
+  //   });
+  // };
   /**
    * Adds new domain to allowed list and persists to chrome.storage.session
    * No-op if domain already exists
@@ -265,15 +257,15 @@ const Popup = () => {
                   : 'Sign in to Bluesky',
               }),
               // Debug: fetch profile button
-              loggedIn &&
-                _jsx('button', {
-                  'aria-label': 'Fetch Bluesky Profile',
-                  type: 'button',
-                  className:
-                    'mt-2 w-full rounded bg-green-600 py-1 text-xs font-medium hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-green-500',
-                  onClick: fetchProfile,
-                  children: 'Fetch Bluesky Profile',
-                }),
+              // loggedIn &&
+              //   _jsx('button', {
+              //     'aria-label': 'Fetch Bluesky Profile',
+              //     type: 'button',
+              //     className:
+              //       'mt-2 w-full rounded bg-green-600 py-1 text-xs font-medium hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-green-500',
+              //     onClick: fetchProfile,
+              //     children: 'Fetch Bluesky Profile',
+              //   }),
             ],
           }),
       _jsxs('div', {
@@ -344,22 +336,22 @@ const Popup = () => {
         }),
       }),
       // Debug UI: show last profile payload for troubleshooting
-      profileDebug
-        ? _jsxs('div', {
-            className: 'border-t border-slate-800 pt-2 mt-2',
-            children: [
-              _jsx('div', {
-                className: 'text-xs text-slate-300',
-                children: 'Profile Debug',
-              }),
-              _jsx('pre', {
-                className: 'bg-slate-900 text-xs text-slate-100 p-2 rounded',
-                style: { maxHeight: '180px', overflow: 'auto' },
-                children: JSON.stringify(profileDebug, null, 2),
-              }),
-            ],
-          })
-        : null,
+      // profileDebug
+      //   ? _jsxs('div', {
+      //       className: 'border-t border-slate-800 pt-2 mt-2',
+      //       children: [
+      //         _jsx('div', {
+      //           className: 'text-xs text-slate-300',
+      //           children: 'Profile Debug',
+      //         }),
+      //         _jsx('pre', {
+      //           className: 'bg-slate-900 text-xs text-slate-100 p-2 rounded',
+      //           style: { maxHeight: '180px', overflow: 'auto' },
+      //           children: JSON.stringify(profileDebug, null, 2),
+      //         }),
+      //       ],
+      //     })
+      //   : null,
     ],
   });
 };
@@ -375,7 +367,16 @@ const mountPopup = () => {
   const container = document.getElementById('root');
   if (!container) return;
   const root = createRoot(container);
-  root.render(_jsx(TRPCProvider, { children: _jsx(Popup, {}) }));
+  root.render(
+    _jsx(QueryClientProvider, {
+      client: queryClient,
+      children: _jsx(trpc.Provider, {
+        client: trpcClient,
+        queryClient: queryClient,
+        children: _jsx(Popup, {}),
+      }),
+    })
+  );
 };
 /**
  * Initialize popup UI on script load

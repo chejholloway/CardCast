@@ -77,10 +77,11 @@ const checkAndRefreshSession = async (): Promise<{
   // Check if token is expiring within 5 minutes
   if (isTokenExpiring(bskySession.accessJwt)) {
     try {
+      // Use resumeSession instead of refresh for token renewal
       const refreshed = await backgroundClient.auth.refresh.mutate({
-        refreshJwt: bskySession.refreshJwt,
         did: bskySession.did,
         handle: bskySession.handle,
+        refreshJwt: bskySession.refreshJwt,
       });
 
       await chrome.storage.session.set({ bskySession: refreshed });

@@ -6,8 +6,6 @@
     "moduleResolution": "bundler",
     "strict": true,
     "noEmit": false,
-    "outDir": "../src/extension/dist",
-    "rootDir": "./src",
     "jsx": "react-jsx",
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -16,7 +14,8 @@
     "types": ["chrome", "vitest/globals", "@testing-library/jest-dom"],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@server/*": ["../server/*"]
     }
   },
   "include": ["src"],
