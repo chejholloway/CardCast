@@ -69,6 +69,7 @@ export const profileRouter = router({
         actor: input.actor,
         did: body.did,
       });
+      ctx.log.info('Response body from fetch', body);
       // Return Bluesky response
       return body;
     }),

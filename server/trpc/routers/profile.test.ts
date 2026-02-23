@@ -9,7 +9,7 @@ const { Response } =
 // Mock the node-fetch module
 vi.mock('node-fetch', () => ({
   __esModule: true,
-  default: vi.fn(),
+  default: mockFetch,
   Response: Response, // Use the actual Response class
 }));
 
@@ -18,7 +18,7 @@ const mockFetch = vi.fn();
 describe('profileRouter', () => {
   beforeEach(() => {
     // Reset the mock before each test
-    (require('node-fetch') as any).default.mockClear();
+    mockFetch.mockClear();
     mockFetch.mockClear();
   });
 
@@ -29,9 +29,11 @@ describe('profileRouter', () => {
     };
 
     // Set the mock implementation for the default export of node-fetch
-    (require('node-fetch') as any).default.mockResolvedValueOnce(
-      new Response(JSON.stringify(mockProfileResponse), { status: 200 })
-    );
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve(mockProfileResponse),
+    });
 
     const caller = createTestCaller({
       secret: process.env.EXTENSION_SHARED_SECRET,
@@ -43,8 +45,8 @@ describe('profileRouter', () => {
     });
 
     expect(result).toEqual(mockProfileResponse);
-    expect((require('node-fetch') as any).default).toHaveBeenCalledTimes(1);
-    expect((require('node-fetch') as any).default).toHaveBeenCalledWith(
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(mockFetch).toHaveBeenCalledWith(
       'https://bsky.app/xrpc/app.bsky.actor.getProfile',
       expect.objectContaining({
         method: 'POST',
@@ -58,9 +60,11 @@ describe('profileRouter', () => {
   });
 
   it('should throw an error if profile retrieval fails', async () => {
-    (require('node-fetch') as any).default.mockResolvedValueOnce(
-      new Response('Profile not found', { status: 404 })
-    );
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 404,
+      text: () => Promise.resolve('Profile not found'),
+    });
 
     const caller = createTestCaller({
       secret: process.env.EXTENSION_SHARED_SECRET,
@@ -72,7 +76,7 @@ describe('profileRouter', () => {
         accessJwt: 'test-access-jwt',
       })
     ).rejects.toThrow('getProfile failed: 404 Profile not found');
-    expect((require('node-fetch') as any).default).toHaveBeenCalledTimes(1);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 
   it('should throw UNAUTHORIZED without valid secret', async () => {

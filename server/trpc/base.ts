@@ -45,7 +45,7 @@ const authMiddleware = t.middleware(async ({ ctx, next }) => {
 
   if (secret !== env.EXTENSION_SHARED_SECRET) {
     logger.warn('Unauthorized access attempt: Invalid extension secret', {
-      ip: ctx.req.ip,
+      ip: ctx.req.headers.get('x-forwarded-for') ?? 'unknown',
     });
     throw new TRPCError({
       code: 'UNAUTHORIZED',
