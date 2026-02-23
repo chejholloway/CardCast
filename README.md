@@ -1,6 +1,6 @@
 # Bluesky Card Cast Browser Extension & Backend
 
-This project is a **Manifest V3 Chrome/Edge extension** plus a **Next.js 14 (App Router) backend** that adds a rich Open Graph link card composer to the official Bluesky web app. It is designed to feel like a native Bluesky feature while keeping enterprise-grade security, observability, and type safety.
+This project is a **Manifest V3 Chrome/Edge extension** built with **React** and **Vite**, plus a **Next.js 16 (App Router) backend** also built with **React**. Both are written in **TypeScript**. The application adds a rich Open Graph link card composer to the official Bluesky web app. It is designed to feel like a native Bluesky feature while keeping enterprise-grade security, observability, and type safety.
 
 The backend is deployed to Vercel and exposes a **tRPC v11** API consumed by the extension via **httpBatchLink**, with **Zod**-validated contracts, **React Query v5** integration, and **@atproto/api** for posting to Bluesky.
 
@@ -13,8 +13,8 @@ The backend is deployed to Vercel and exposes a **tRPC v11** API consumed by the
 This codebase has **excellent architecture and security** with comprehensive testing, documentation, and automated quality checks. Ready for production deployment:
 
 - **Testing**: ✅ Complete (25/25) - Full test coverage with Vitest, RTL, and MSW
-- **Documentation**: ✅ Complete (15/30) - JSDoc on all routers, comprehensive guides, generated API reference
-- **Code Quality**: ✅ Complete (15/20) - Oxlint enforced via Husky pre-commit hooks; lint-staged configured
+- **Documentation**: ✅ Complete (15/30) - JSDoc on all routers, comprehensive guides, generated API reference using TypeDoc
+- **Code Quality**: ✅ Complete (20/20) - Oxlint enforced via Husky pre-commit hooks; lint-staged configured
 - **CI/CD**: ✅ Complete - GitHub Actions workflows for testing, linting, building, and releases
 - **Environment**: ✅ Documented - `.env.example` provided with all variables explained
 
@@ -30,7 +30,7 @@ This codebase has **excellent architecture and security** with comprehensive tes
 # Clone and install
 git clone https://github.com/your-org/cardcast.git
 cd cardcast
-npm install
+npm install --legacy-peer-deps
 
 # Create environment file
 cp .env.example .env.local
@@ -53,9 +53,7 @@ Then visit https://bsky.app, compose a post, paste a URL from thehill.com/theroo
 - **Ready to deploy?** See [DEPLOYMENT.md](./docs/DEPLOYMENT.md)
 - **Need to configure something?** Check [CONFIGURATION.md](./docs/CONFIGURATION.md)
 - **Setting up Git hooks & CI/CD?** See [GIT_HOOKS_AND_CI.md](./docs/GIT_HOOKS_AND_CI.md)
-- **API reference?** Browse the [generated TypeDoc API reference](./docs/api/README.md) for all server and extension APIs
-
----
+- **API reference?** Browse the [generated TypeDoc API reference](./docs/api/README.md) for all server and extension APIs---
 
 ## High-Level Architecture
 
@@ -149,7 +147,7 @@ Key files:
 
 ## Browser Extension (Manifest V3)
 
-> Note: The extension folder is scaffolded under `extension/`. Scripts are TypeScript-based and built via `npm run build:ext` (uses `tsc` by default; you can swap in a bundler like Vite/Rspack for production).
+> Note: The extension folder is scaffolded under `extension/`. Scripts are TypeScript-based and bundled with **Vite** via `npm run build:ext`.
 
 Planned components:
 
