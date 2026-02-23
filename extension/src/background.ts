@@ -17,6 +17,23 @@
 
 import { QueryClient } from '@tanstack/react-query';
 import { backgroundClient } from './trpcClient';
+import * as Sentry from '@sentry/browser';
+import { SENTRY_DSN } from './config';
+
+if (SENTRY_DSN) {
+  Sentry.init({
+    dsn: SENTRY_DSN,
+    tracesSampleRate: 1.0,
+  });
+
+  self.addEventListener('unhandledrejection', (event) => {
+    Sentry.captureException(event.reason);
+  });
+
+  self.addEventListener('error', (event) => {
+    Sentry.captureException(event.error);
+  });
+}
 
 /**
  * Shared React Query client for the service worker

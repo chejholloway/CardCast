@@ -8,6 +8,7 @@ const envSchema = z.object({
   BLUESKY_SERVICE_URL: z.string().url().default('https://bsky.social'),
   EXTENSION_SHARED_SECRET: z.string().min(16),
   ALLOWED_ORIGIN: z.string().optional(),
+  SENTRY_DSN: z.string().optional(),
 });
 
 declare global {
@@ -28,6 +29,7 @@ export const getEnv = (): Env => {
     BLUESKY_SERVICE_URL: process.env.BLUESKY_SERVICE_URL,
     EXTENSION_SHARED_SECRET: process.env.EXTENSION_SHARED_SECRET,
     ALLOWED_ORIGIN: process.env.ALLOWED_ORIGIN,
+    SENTRY_DSN: process.env.SENTRY_DSN,
   });
 
   if (!parsed.success) {

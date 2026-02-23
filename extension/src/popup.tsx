@@ -19,10 +19,19 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { trpc, trpcClient } from './trpcClient';
 import { ErrorBoundary } from './ErrorBoundary';
-import { logSecurityEvent } from './securityLogger';
 import { useSession } from './useSession';
 import { PostCreationModal } from './PostCreationModal';
 import { TRPCClientError } from '@trpc/client';
+import * as Sentry from '@sentry/react';
+import { SENTRY_DSN } from './config';
+import toast, { Toaster } from 'react-hot-toast';
+
+if (SENTRY_DSN) {
+  Sentry.init({
+    dsn: SENTRY_DSN,
+    tracesSampleRate: 1.0,
+  });
+}
 
 // Utility function to validate a domain string
 const isValidDomain = (domain: string): boolean => {
@@ -108,10 +117,7 @@ const Popup: React.FC = () => {
   useEffect(() => {
     const handleErrors = (event: PromiseRejectionEvent | ErrorEvent) => {
       const error = 'reason' in event ? event.reason : event.error;
-      logSecurityEvent('other_security_event', {
-        message: error?.message ?? 'Unknown error',
-        stack: error?.stack ?? '',
-      });
+      Sentry.captureException(error);
     };
 
     window.addEventListener('unhandledrejection', handleErrors);
@@ -128,10 +134,8 @@ const Popup: React.FC = () => {
       queryClient.invalidateQueries();
     },
     onError: (error: TRPCClientError<any>) => {
-      logSecurityEvent('auth_failure', {
-        message: error.message,
-        code: error.shape?.code,
-      });
+      toast.error(`Login failed: ${error.message}`);
+      Sentry.captureException(error);
     },
   });
 
@@ -355,6 +359,7 @@ const Popup: React.FC = () => {
       {isModalOpen && (
         <PostCreationModal onClose={() => setIsModalOpen(false)} />
       )}
+      <Toaster />
     </div>
   );
 };

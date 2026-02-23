@@ -14,6 +14,16 @@
 import { initTRPC, TRPCError } from '@trpc/server';
 import type { TRPCContext } from './trpcContext';
 import { getEnv } from '../env';
+import * as Sentry from '@sentry/node';
+import { createLogger } from '../log';
+
+const env = getEnv();
+
+if (env.NODE_ENV === 'production' && env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: env.SENTRY_DSN,
+  });
+}
 
 /** Initialize tRPC with context type */
 const t = initTRPC.context<TRPCContext>().create();

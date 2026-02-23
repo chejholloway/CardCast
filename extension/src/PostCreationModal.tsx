@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { trpc } from './trpcClient';
-import { logSecurityEvent } from './securityLogger';
 import { TRPCClientError } from '@trpc/client';
 import { useSession } from './useSession';
 import type { OgData } from './types';
+import toast, { Toaster } from 'react-hot-toast';
+import * as Sentry from '@sentry/react';
 
 interface PostCreationFormProps {
   postText: string;
@@ -110,10 +111,8 @@ export const PostCreationModal: React.FC<PostCreationModalProps> = ({
 
   const createPostMutation = trpc.post.create.useMutation({
     onError: (error: TRPCClientError<any>) => {
-      logSecurityEvent('post_creation_failure', {
-        message: error.message,
-        code: error.shape?.code,
-      });
+      toast.error(`Failed to create post: ${error.message}`);
+      Sentry.captureException(error);
     },
   });
 
@@ -141,17 +140,20 @@ export const PostCreationModal: React.FC<PostCreationModalProps> = ({
   };
 
   return (
-    <PostCreationForm
-      postText={postText}
-      setPostText={setPostText}
-      url={url}
-      setUrl={setUrl}
-      handleFetchPreview={fetchPreview}
-      isFetchingPreview={isFetchingPreview}
-      ogData={ogData ?? null}
-      handleCreatePost={handleCreatePost}
-      isCreatingPost={createPostMutation.isPending}
-      onClose={onClose}
-    />
+    <>
+      <PostCreationForm
+        postText={postText}
+        setPostText={setPostText}
+        url={url}
+        setUrl={setUrl}
+        handleFetchPreview={fetchPreview}
+        isFetchingPreview={isFetchingPreview}
+        ogData={ogData ?? null}
+        handleCreatePost={handleCreatePost}
+        isCreatingPost={createPostMutation.isPending}
+        onClose={onClose}
+      />
+      <Toaster />
+    </>
   );
 };
