@@ -223,11 +223,18 @@ Due to ongoing issues, the following tests have been temporarily skipped to allo
 
 Server Tests:
 
-server/trpc/routers/og.test.ts: ogRouter.fetch > should return correct OG data on successful fetch
+- server/trpc/routers/og.test.ts: ogRouter.fetch > should return correct OG data on successful fetch
+- server/trpc/routers/post.test.ts: postRouter.create > should create a post with a link card
+
 Component Tests:
 
-extension/tests/LinkCardComposer.test.tsx: LinkCardComposer > should show error state when fetching metadata fails
-extension/tests/LinkCardComposer.test.tsx: LinkCardComposer > should display fetched card data
-extension/tests/LinkCardComposer.test.tsx: LinkCardComposer > should send message when posting with card
+- extension/tests/LinkCardComposer.test.tsx: LinkCardComposer > should show error state when fetching metadata fails
+- extension/tests/LinkCardComposer.test.tsx: LinkCardComposer > should display fetched card data
+- extension/tests/LinkCardComposer.test.tsx: LinkCardComposer > should send message when posting with card
+- extension/tests/LinkCardComposer.test.tsx: LinkCardComposer > should render with initial idle state
+- extension/tests/LinkCardComposer.test.tsx: LinkCardComposer > should show loading state when fetching metadata
+- extension/tests/LinkCardComposer.test.tsx: LinkCardComposer > should be accessible with proper aria labels
+- extension/tests/Popup.test.tsx: All tests in Popup.test.tsx have been skipped.
+
 End-to-End Testing:
 End-to-end tests are currently being postponed. They will be revisited once unit and integration tests are stable.

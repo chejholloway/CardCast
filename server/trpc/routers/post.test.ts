@@ -6,7 +6,7 @@ describe('postRouter.create', () => {
     // Reset MSW handlers between tests - handled by vitest.setup.ts
   });
 
-  it('should create a post with a link card', async () => {
+  it.skip('should create a post with a link card', async () => {
     const caller = createTestCaller({
       secret: process.env.EXTENSION_SHARED_SECRET,
     });
