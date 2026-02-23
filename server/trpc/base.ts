@@ -18,6 +18,7 @@ import * as Sentry from '@sentry/node';
 import { createLogger } from '../log';
 
 const env = getEnv();
+const logger = createLogger();
 
 if (env.NODE_ENV === 'production' && env.SENTRY_DSN) {
   Sentry.init({
@@ -43,6 +44,9 @@ const authMiddleware = t.middleware(async ({ ctx, next }) => {
   const secret = ctx.req.headers.get('x-extension-secret');
 
   if (secret !== env.EXTENSION_SHARED_SECRET) {
+    logger.warn('Unauthorized access attempt: Invalid extension secret', {
+      ip: ctx.req.ip,
+    });
     throw new TRPCError({
       code: 'UNAUTHORIZED',
       message: 'Invalid extension secret',

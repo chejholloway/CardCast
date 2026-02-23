@@ -2,6 +2,7 @@
 
 import { initTRPC } from '@trpc/server';
 import { appRouter } from '../trpc/router';
+import { createLogger } from '../log';
 
 /**
  * Create a tRPC caller for testing
@@ -23,11 +24,15 @@ export const createTestContext = (options: TestContextOptions = {}) => {
     headers.set('origin', options.origin);
   }
 
+  const logger = createLogger();
+
   return {
     req: {
       headers,
       ip: options.ip || '127.0.0.1',
     } as any,
+    res: {} as any, // Add a mock res object
+    log: logger,
   };
 };
 

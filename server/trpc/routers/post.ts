@@ -15,10 +15,66 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { protectedProcedure, router } from '../base';
-import { log } from '../../log';
 import { getEnv } from '../../env';
 import { BskyAgent } from '@atproto/api';
 import { uploadImage } from './uploadImage';
+
+/**
+ * Uploads an image to Bluesky and returns the blob reference.
+ * @param agent The BskyAgent instance.
+ * @param imageUrl The URL of the image to upload.
+ * @returns The blob reference or undefined if upload fails.
+ */
+async function uploadImageAndGetBlobRef(agent: BskyAgent, imageUrl: string) {
+  // uploadImage handles fetch, compression, and upload.
+  // It returns the blob on success or undefined on failure.
+  return await uploadImage(agent, imageUrl);
+}
+
+/**
+ * Creates a Bluesky post record.
+ * @param agent The BskyAgent instance.
+ * @param postInput The post content input.
+ * @param blobRef The image blob reference, if any.
+ * @returns The URI of the created post and whether the thumbnail was uploaded.
+ * @throws {TRPCError} if post creation fails or URI is missing.
+ */
+async function createBlueskyPostRecord(
+  agent: BskyAgent,
+  postInput: z.infer<typeof postContentSchema>,
+  blobRef: { cid: string; mimeType: string } | undefined
+) {
+  const record: Record<string, unknown> = {
+    $type: 'app.bsky.feed.post',
+    text: postInput.text,
+    createdAt: new Date().toISOString(),
+    embed: {
+      $type: 'app.bsky.embed.external',
+      external: {
+        uri: postInput.url,
+        title: postInput.title,
+        description: postInput.description,
+        ...(blobRef ? { thumb: blobRef } : {}),
+      },
+    },
+  };
+
+  const res = await agent.api.com.atproto.repo.createRecord({
+    repo: agent.session?.did || '',
+    collection: 'app.bsky.feed.post',
+    record,
+  });
+
+  const uri = res.data.uri;
+  if (!uri) {
+    throw new TRPCError({
+      code: 'INTERNAL_SERVER_ERROR',
+      message: 'Missing URI from createRecord response',
+    });
+  }
+
+  return { uri, thumbUploaded: !!blobRef };
+}
 
 /** Post content details */
 const postContentSchema = z.object({
@@ -47,7 +103,10 @@ const authSchema = z.object({
 });
 
 /** Input schema for post creation, combining content and auth */
-const postInputSchema = postContentSchema.merge(authSchema);
+const postCreateInputSchema = z.object({
+  post: postContentSchema,
+  auth: authSchema,
+});
 
 /** Output schema for post creation */
 const postOutputSchema = z.object({
@@ -97,63 +156,69 @@ export const postRouter = router({
    * // }
    */
   create: protectedProcedure
-    .input(postInputSchema)
+    .input(postCreateInputSchema)
     .output(postOutputSchema)
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      ctx.log.info('Attempting to create Bluesky post', {
+        text: input.post.text.substring(0, 50) + '...',
+        url: input.post.url,
+      });
       const env = getEnv();
       const agent = new BskyAgent({ service: env.BLUESKY_SERVICE_URL });
 
       // Hydrate agent with existing session rather than logging in with password.
       await agent.resumeSession({
-        accessJwt: input.accessJwt,
-        did: input.did,
-        handle: input.handle,
-        refreshJwt: input.refreshJwt,
+        accessJwt: input.auth.accessJwt,
+        did: input.auth.did,
+        handle: input.auth.handle,
+        refreshJwt: input.auth.refreshJwt,
         active: true,
       });
+      ctx.log.debug('Bluesky agent session resumed', { did: input.auth.did });
 
-      // uploadImage handles fetch, compression, and upload.
-      // It returns the blob on success or undefined on failure.
-      const blobRef = await uploadImage(agent, input.imageUrl);
+      ctx.log.debug('Uploading image and getting blob reference', {
+        imageUrl: input.post.imageUrl,
+      });
+      const blobRef = await uploadImageAndGetBlobRef(
+        agent,
+        input.post.imageUrl
+      );
+      if (blobRef) {
+        ctx.log.debug('Image uploaded successfully', {
+          cid: blobRef.ref.toString(),
+        });
+      } else {
+        ctx.log.warn('Image upload failed or returned no blob reference', {
+          imageUrl: input.post.imageUrl,
+        });
+      }
 
       try {
-        const record: Record<string, unknown> = {
-          $type: 'app.bsky.feed.post',
-          text: input.text,
-          createdAt: new Date().toISOString(),
-          embed: {
-            $type: 'app.bsky.embed.external',
-            external: {
-              uri: input.url,
-              title: input.title,
-              description: input.description,
-              ...(blobRef ? { thumb: blobRef } : {}),
-            },
-          },
-        };
-
-        const res = await agent.api.com.atproto.repo.createRecord({
-          repo: input.did,
-          collection: 'app.bsky.feed.post',
-          record,
+        ctx.log.debug('Creating Bluesky post record');
+        const { uri, thumbUploaded } = await createBlueskyPostRecord(
+          agent,
+          input.post,
+          blobRef
+            ? { cid: blobRef.ref.toString(), mimeType: blobRef.mimeType }
+            : undefined
+        );
+        ctx.log.info('Bluesky post created successfully', {
+          uri,
+          thumbUploaded,
         });
-
-        const uri = res.data.uri;
-        if (!uri) {
-          throw new Error('Missing URI from createRecord response');
-        }
 
         return {
           success: true,
           uri,
-          thumbUploaded: !!blobRef,
+          thumbUploaded,
         };
       } catch (error) {
-        log.error('Failed to create Bluesky post', {
+        ctx.log.error('Failed to create Bluesky post', {
           error:
             error instanceof Error
               ? error.stack || error.message
               : JSON.stringify(error),
+          postInput: { ...input.post, auth: '[REDACTED]' }, // Log post input but redact auth
         });
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
@@ -165,6 +230,6 @@ export const postRouter = router({
 });
 
 /** Type for post.create input parameters */
-export type PostCreateInput = z.infer<typeof postInputSchema>;
+export type PostCreateInput = z.infer<typeof postCreateInputSchema>;
 /** Type for post.create output: success flag, URI, and image upload status */
 export type PostCreateOutput = z.infer<typeof postOutputSchema>;

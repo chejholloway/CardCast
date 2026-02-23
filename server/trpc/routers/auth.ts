@@ -155,7 +155,10 @@ export const authRouter = router({
         });
 
         if (!agent.session) {
-          throw new Error('Session refresh failed');
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Session refresh failed',
+          });
         }
 
         log.info('Session refreshed successfully', {
@@ -242,7 +245,10 @@ export const authRouter = router({
         await agent.resumeSession({ ...input, active: true });
 
         if (!agent.session) {
-          throw new Error('Session resume failed');
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Session resume failed',
+          });
         }
 
         log.info('Session resumed successfully', {

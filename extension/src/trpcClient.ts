@@ -9,6 +9,16 @@
  * This module is used by extension React components to call the backend API.
  *
  * @module extension/src/trpcClient
+ *
+ * @remarks
+ * **State Management Strategy (as per Re-Engineering Plan.md - Section 5)**
+ * This project leverages React Query for efficient server state management, handling data fetching,
+ * caching, synchronization, and updates. Client-side UI state is managed using React's built-in
+ * features (useState, useReducer, Context API).
+ *
+ * This approach is currently effective for the application's size and complexity.
+ * For future scalability, should the application's client-side state management needs become
+ * more complex, a global state management solution like Zustand will be considered.
  */
 
 import { createTRPCReact } from '@trpc/react-query';
