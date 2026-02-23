@@ -8,7 +8,7 @@ const allowedOrigins = [
   'chrome-extension://onmenhpkfiinmncaclagiboelfjjeilk',
 ];
 
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const origin = req.headers.get('origin') || '';
   if (origin && allowedOrigins.includes(origin)) {
     const res = NextResponse.next();
