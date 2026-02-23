@@ -103,7 +103,7 @@ const Popup: React.FC = () => {
   const [newDomain, setNewDomain] = useState('');
   const [liveMessage, setLiveMessage] = useState<string>('');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { session, loading } = useSession();
+  const { session, loading: _loading } = useSession();
 
   useEffect(() => {
     const handleErrors = (event: PromiseRejectionEvent | ErrorEvent) => {

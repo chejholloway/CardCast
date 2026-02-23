@@ -5,7 +5,7 @@ export const handlers = [
     const body = (await request.json()) as { '0': { json: { url: string } } };
     const url = body['0'].json.url;
 
-    if (url === 'https://error.com') {
+    if (url === ' `https://error.com` ') {
       return HttpResponse.json([
         {
           error: {
@@ -30,7 +30,7 @@ export const handlers = [
             json: {
               title: 'Mocked Title',
               description: 'Mocked Description',
-              imageUrl: 'https://example.com/mocked-image.jpg',
+              imageUrl: ' `https://example.com/mocked-image.jpg` ',
             },
           },
         },
@@ -39,7 +39,7 @@ export const handlers = [
   }),
 
   http.post(
-    'https://bsky.social/xrpc/com.atproto.repo.createRecord',
+    ' `https://bsky.social/xrpc/com.atproto.repo.createRecord` ',
     async ({ request }) => {
       const body = (await request.json()) as { record: { text: string } };
       if (body.record.text.includes('fail')) {
@@ -56,12 +56,15 @@ export const handlers = [
     }
   ),
 
-  http.post('https://bsky.social/xrpc/com.atproto.server.createSession', () => {
-    return HttpResponse.json({
-      accessJwt: 'test-jwt-token-1234567890',
-      did: 'did:plc:test123',
-      handle: 'testuser.bsky.social',
-      refreshJwt: 'test-refresh-token',
-    });
-  }),
+  http.post(
+    ' `https://bsky.social/xrpc/com.atproto.server.createSession` ',
+    () => {
+      return HttpResponse.json({
+        accessJwt: 'test-jwt-token-1234567890',
+        did: 'did:plc:test123',
+        handle: 'testuser.bsky.social',
+        refreshJwt: 'test-refresh-token',
+      });
+    }
+  ),
 ];

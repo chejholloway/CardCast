@@ -4,6 +4,10 @@ import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { renderWithProviders } from './testUtils';
 
+interface ChromeStorageSessionGetResult {
+  allowedDomains?: string[];
+}
+
 // Mock chrome API
 global.chrome = {
   storage: {
@@ -27,14 +31,17 @@ const Popup: React.FC = () => {
 
   React.useEffect(() => {
     // Load domains from storage
-    chrome.storage.session.get(['allowedDomains'], (result: any) => {
-      const allowed = result?.allowedDomains ?? [
-        'thehill.com',
-        'theroot.com',
-        'usanews.com',
-      ];
-      setDomains(allowed);
-    });
+    chrome.storage.session.get(
+      ['allowedDomains'],
+      (result: ChromeStorageSessionGetResult) => {
+        const allowed = result?.allowedDomains ?? [
+          'thehill.com',
+          'theroot.com',
+          'usanews.com',
+        ];
+        setDomains(allowed);
+      }
+    );
   }, []);
 
   const handleLogin = async () => {

@@ -133,7 +133,7 @@ export const ogRouter = router({
         return cached;
       }
 
-      const ip = ctx.req.ip ?? 'unknown';
+      const ip = ctx.req.headers.get('x-forwarded-for') ?? 'unknown';
       if (!(await checkRateLimit(ip))) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
