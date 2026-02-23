@@ -6,24 +6,24 @@
   "permissions": ["storage", "scripting", "activeTab", "tabs"],
   "host_permissions": ["https://bsky.app/*"],
   "background": {
-    "service_worker": "extension/src/background.js",
+    "service_worker": "src/background.js",
     "type": "module"
   },
 
   "action": {
-    "default_popup": "extension/src/popup.html",
+    "default_popup": "src/popup.html",
     "default_title": "Bluesky Link Card"
   },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["extension/src/contentScript.js"]
+      "js": ["src/contentScript.js"]
     }
   ],
   "icons": {
-    "16": "extension/icons/icon-16.png",
-    "48": "extension/icons/icon-48.png",
-    "128": "extension/icons/icon-128.png"
+    "16": "icons/icon-16.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
   },
   "minimum_chrome_version": "120"
 }
