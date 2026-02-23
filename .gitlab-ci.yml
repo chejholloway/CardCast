@@ -1,0 +1,67 @@
+image: node:20-alpine
+
+stages:
+  - install
+  - lint
+  - typecheck
+  - test
+  - build
+  - deploy
+
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - node_modules/
+  policy: pull-push
+
+install_dependencies:
+  stage: install
+  script:
+    - npm ci
+  artifacts:
+    paths:
+      - node_modules/
+
+lint_code:
+  stage: lint
+  script:
+    - npm run lint
+  dependencies:
+    - install_dependencies
+
+typecheck_code:
+  stage: typecheck
+  script:
+    - npm run typecheck
+  dependencies:
+    - install_dependencies
+
+run_tests:
+  stage: test
+  script:
+    - npm run test
+  dependencies:
+    - install_dependencies
+
+build_project:
+  stage: build
+  script:
+    - npm run build
+    - npm run build:ext
+  dependencies:
+    - install_dependencies
+  artifacts:
+    paths:
+      - .next/ # Assuming Next.js build output
+      - dist/ # Assuming extension build output
+
+deploy_application:
+  stage: deploy
+  environment: production
+  script:
+    - echo "Deploying application..."
+    - echo "Application successfully deployed."
+  only:
+    - main # Only deploy from the main branch
+  dependencies:
+    - build_project
