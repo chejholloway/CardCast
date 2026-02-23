@@ -9,7 +9,7 @@
 
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
-import { BskyAgent } from '@atproto/api';
+import { AtpAgent } from '@atproto/api';
 import { protectedProcedure, router } from '../base';
 import { getEnv } from '../../env';
 import { log } from '../../log';
@@ -70,7 +70,7 @@ export const authRouter = router({
     .output(sessionSchema)
     .mutation(async ({ input }) => {
       const env = getEnv();
-      const agent = new BskyAgent({ service: env.BLUESKY_SERVICE_URL });
+      const agent = new AtpAgent({ service: env.BLUESKY_SERVICE_URL });
       try {
         await agent.login({
           identifier: input.identifier,
@@ -144,7 +144,7 @@ export const authRouter = router({
     .output(sessionSchema)
     .mutation(async ({ input }) => {
       const env = getEnv();
-      const agent = new BskyAgent({ service: env.BLUESKY_SERVICE_URL });
+      const agent = new AtpAgent({ service: env.BLUESKY_SERVICE_URL });
 
       try {
         // Resume with refresh token. The accessJwt will be ignored and a new one fetched.
@@ -205,19 +205,12 @@ export const authRouter = router({
    * const status = await trpc.auth.status.query();
    * // Returns: { loggedIn: false, session: null }
    */
-  status: protectedProcedure
-    .input(z.object({ did: z.string().optional() }))
-    .output(statusOutputSchema)
-    .query(async ({ input }) => {
-      if (!input.did) {
-        return { loggedIn: false, session: null };
-      }
-      const session = await getSession(input.did);
-      return {
-        loggedIn: !!session,
-        session,
-      };
-    }),
+  status: protectedProcedure.output(statusOutputSchema).query(() => {
+    return {
+      loggedIn: false,
+      session: null,
+    };
+  }),
 
   /**
    * Resume a Bluesky session from stored session data
@@ -232,7 +225,7 @@ export const authRouter = router({
     .output(sessionSchema)
     .mutation(async ({ input }) => {
       const env = getEnv();
-      const agent = new BskyAgent({
+      const agent = new AtpAgent({
         service: env.BLUESKY_SERVICE_URL,
         persistSession: (_evt, session) => {
           if (session) {

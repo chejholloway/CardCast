@@ -79,6 +79,62 @@ export const handlers = [
     return new Response(mockHtml, { status: 200 });
   }),
 
+  // Mock OG metadata fetch for success.com
+  http.get('https://success.com/', async () => {
+    const mockHtml = `
+      <html>
+        <head>
+          <meta property="og:title" content="Mocked Title" />
+          <meta property="og:description" content="Mocked Description" />
+          <meta property="og:image" content="https://example.com/mocked-image.jpg" />
+        </head>
+      </html>
+    `;
+    return new Response(mockHtml, { status: 200 });
+  }),
+
+  // Mock OG metadata fetch for theroot.com
+  http.get('https://theroot.com/some-article', async () => {
+    const mockHtml = `
+      <html>
+        <head>
+          <meta property="og:title" content="The Root Title" />
+          <meta property="og:description" content="The Root Description" />
+          <meta property="og:image" content="https://example.com/theroot-image.jpg" />
+        </head>
+      </html>
+    `;
+    return new Response(mockHtml, { status: 200 });
+  }),
+
+  // Mock OG metadata fetch for usanews.com
+  http.get('https://usanews.com/some-article', async () => {
+    const mockHtml = `
+      <html>
+        <head>
+          <meta property="og:title" content="USA News Title" />
+          <meta property="og:description" content="USA News Description" />
+          <meta property="og:image" content="https://example.com/usanews-image.jpg" />
+        </head>
+      </html>
+    `;
+    return new Response(mockHtml, { status: 200 });
+  }),
+
+  // Mock OG metadata fetch for thehill.com
+  http.get('https://thehill.com/some-article', async () => {
+    const mockHtml = `
+      <html>
+        <head>
+          <meta property="og:title" content="The Hill Title" />
+          <meta property="og:description" content="The Hill Description" />
+          <meta property="og:image" content="https://example.com/thehill-image.jpg" />
+        </head>
+      </html>
+    `;
+    return new Response(mockHtml, { status: 200 });
+  }),
+
   // Mock OG metadata fetch for example.com (image)
   http.get('https://example.com/image.jpg', async () => {
     return new Response(Buffer.from('fake image data'), {
@@ -103,13 +159,9 @@ export const handlers = [
   // Mock Bluesky getProfile (single actor)
   http.post('https://bsky.app/xrpc/app.bsky.actor.getProfile', async () => {
     return HttpResponse.json({
-      result: {
-        data: {
-          did: 'did:plc:test123',
-          handle: 'testuser.bsky.social',
-          displayName: 'Test User',
-        },
-      },
+      did: 'did:plc:test123',
+      handle: 'testuser.bsky.social',
+      displayName: 'Test User',
     });
   }),
 
@@ -144,10 +196,12 @@ export const handlers = [
     'https://bsky.social/xrpc/com.atproto.repo.uploadBlob',
     async () => {
       return HttpResponse.json({
-        blob: {
-          ref: { $link: 'bafy123' },
-          mimeType: 'image/jpeg',
-          size: 12345,
+        data: {
+          blob: {
+            ref: { $link: 'bafy123' },
+            mimeType: 'image/jpeg',
+            size: 12345,
+          },
         },
       });
     }

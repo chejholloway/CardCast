@@ -1,12 +1,21 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createTestCaller } from '../../tests/testHelpers';
+import * as rateLimitModule from '../../lib/rateLimit';
+
+vi.mock('@vercel/kv', () => ({
+  kv: {
+    get: vi.fn(() => null),
+    set: vi.fn(() => null),
+  },
+}));
 
 describe('ogRouter.fetch', () => {
   beforeEach(() => {
+    vi.spyOn(rateLimitModule, 'checkRateLimit').mockResolvedValue(true);
     // Reset MSW handlers between tests - handled by vitest.setup.ts
   });
 
-  it.skip('should return correct OG data on successful fetch', async () => {
+  it('should return correct OG data on successful fetch', async () => {
     const caller = createTestCaller({
       secret: process.env.EXTENSION_SHARED_SECRET,
     });
@@ -21,7 +30,7 @@ describe('ogRouter.fetch', () => {
     });
   });
 
-  it.skip('should fetch OG metadata for allowed domain', async () => {
+  it('should fetch OG metadata for allowed domain', async () => {
     const caller = createTestCaller({
       secret: process.env.EXTENSION_SHARED_SECRET,
     });
@@ -36,7 +45,7 @@ describe('ogRouter.fetch', () => {
     });
   });
 
-  it.skip('should test OG data retrieval for specified domains', async () => {
+  it('should test OG data retrieval for specified domains', async () => {
     const domainsToTest = ['thehill.com', 'theroot.com', 'usanews.com'];
 
     for (const domain of domainsToTest) {
@@ -84,7 +93,7 @@ describe('ogRouter.fetch', () => {
     ).rejects.toThrow();
   });
 
-  it.skip('should return loggedIn: false (stateless)', async () => {
+  it('should return loggedIn: false (stateless)', async () => {
     const caller = createTestCaller({
       secret: process.env.EXTENSION_SHARED_SECRET,
     });

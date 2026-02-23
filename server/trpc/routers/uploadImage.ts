@@ -1,4 +1,4 @@
-import { BskyAgent } from '@atproto/api';
+import { AtpAgent } from '@atproto/api';
 import { TRPCError } from '@trpc/server';
 import sharp from 'sharp';
 import { log } from '../../log';
@@ -30,7 +30,7 @@ const withTimeout = async <T>(promise: Promise<T>, ms: number): Promise<T> => {
   }
 };
 
-export const uploadImage = async (agent: BskyAgent, imageUrl: string) => {
+export const uploadImage = async (agent: AtpAgent, imageUrl: string) => {
   try {
     const imgRes = await withTimeout(
       fetch(imageUrl, { headers: realisticHeaders }),

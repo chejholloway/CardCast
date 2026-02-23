@@ -16,16 +16,16 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { protectedProcedure, router } from '../base';
 import { getEnv } from '../../env';
-import { BskyAgent } from '@atproto/api';
+import { AtpAgent } from '@atproto/api';
 import { uploadImage } from './uploadImage';
 
 /**
  * Uploads an image to Bluesky and returns the blob reference.
- * @param agent The BskyAgent instance.
+ * @param agent The AtpAgent instance.
  * @param imageUrl The URL of the image to upload.
  * @returns The blob reference or undefined if upload fails.
  */
-async function uploadImageAndGetBlobRef(agent: BskyAgent, imageUrl: string) {
+async function uploadImageAndGetBlobRef(agent: AtpAgent, imageUrl: string) {
   // uploadImage handles fetch, compression, and upload.
   // It returns the blob on success or undefined on failure.
   return await uploadImage(agent, imageUrl);
@@ -33,14 +33,14 @@ async function uploadImageAndGetBlobRef(agent: BskyAgent, imageUrl: string) {
 
 /**
  * Creates a Bluesky post record.
- * @param agent The BskyAgent instance.
+ * @param agent The AtpAgent instance.
  * @param postInput The post content input.
  * @param blobRef The image blob reference, if any.
  * @returns The URI of the created post and whether the thumbnail was uploaded.
  * @throws {TRPCError} if post creation fails or URI is missing.
  */
 async function createBlueskyPostRecord(
-  agent: BskyAgent,
+  agent: AtpAgent,
   postInput: z.infer<typeof postContentSchema>,
   blobRef: { cid: string; mimeType: string } | undefined
 ) {
@@ -164,7 +164,7 @@ export const postRouter = router({
         url: input.post.url,
       });
       const env = getEnv();
-      const agent = new BskyAgent({ service: env.BLUESKY_SERVICE_URL });
+      const agent = new AtpAgent({ service: env.BLUESKY_SERVICE_URL });
 
       // Hydrate agent with existing session rather than logging in with password.
       await agent.resumeSession({

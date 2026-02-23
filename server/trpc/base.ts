@@ -23,6 +23,8 @@ const logger = createLogger();
 if (env.NODE_ENV === 'production' && env.SENTRY_DSN) {
   Sentry.init({
     dsn: env.SENTRY_DSN,
+    integrations: (integrations) =>
+      integrations.filter((integration) => integration.name !== 'Prisma'),
   });
 }
 
