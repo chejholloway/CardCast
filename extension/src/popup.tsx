@@ -14,7 +14,11 @@ export const Popup: React.FC = () => {
   if (loading) {
     return (
       <div className="w-[420px] h-[200px] bg-[#0c1016] flex items-center justify-center">
-        <div className="w-6 h-6 rounded-full border-2 border-[#0085ff] border-t-transparent animate-spin" />
+        <div
+          role="status"
+          aria-label="Loading"
+          className="w-6 h-6 rounded-full border-2 border-[#0085ff] border-t-transparent animate-spin"
+        />
       </div>
     );
   }

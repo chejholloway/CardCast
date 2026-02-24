@@ -9,14 +9,16 @@ const mockOnClose = vi.fn();
 describe('SettingsPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (chrome.storage.session.get as vi.Mock).mockImplementation(
-      (_keys: string[], callback: (items: { [key: string]: any }) => void) => {
-        callback({ autoDetectDomains: ['example.com', 'test.com'] });
+    vi.spyOn(chrome.storage.session, 'get').mockImplementation(
+      (_keys, callback) => {
+        callback({ allowedDomains: ['example.com', 'test.com'] });
       }
     );
-    (chrome.storage.session.set as vi.Mock).mockImplementation(
-      (_data: { [key: string]: any }, callback: () => void) => {
-        callback();
+    vi.spyOn(chrome.storage.session, 'set').mockImplementation(
+      (_data, callback) => {
+        if (callback) {
+          callback();
+        }
       }
     );
   });
@@ -31,17 +33,17 @@ describe('SettingsPanel', () => {
 
   it('should add a new valid domain', async () => {
     render(<SettingsPanel onClose={mockOnClose} />);
-    const input = screen.getByPlaceholderText('Add domain');
+    // "should add a new valid domain" — line 36
+    const input = screen.getByRole('textbox', { name: /add domain/i });
     const addButton = screen.getByRole('button', { name: /Add/i });
 
     fireEvent.change(input, { target: { value: 'newdomain.com' } });
     fireEvent.click(addButton);
 
     await waitFor(() => {
-      expect(chrome.storage.session.set).toHaveBeenCalledWith(
-        { autoDetectDomains: ['example.com', 'test.com', 'newdomain.com'] },
-        expect.any(Function)
-      );
+      expect(chrome.storage.session.set).toHaveBeenCalledWith({
+        allowedDomains: ['example.com', 'test.com', 'newdomain.com'],
+      });
     });
   });
 
@@ -55,10 +57,9 @@ describe('SettingsPanel', () => {
     fireEvent.click(removeButtons[0]);
 
     await waitFor(() => {
-      expect(chrome.storage.session.set).toHaveBeenCalledWith(
-        { autoDetectDomains: ['test.com'] },
-        expect.any(Function)
-      );
+      expect(chrome.storage.session.set).toHaveBeenCalledWith({
+        allowedDomains: ['test.com'],
+      });
     });
   });
 

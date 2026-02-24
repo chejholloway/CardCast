@@ -16,36 +16,39 @@ import { server } from './server';
 import { http, HttpResponse } from 'msw';
 import { LinkCardComposer } from '../src/LinkCardComposer';
 
-// 1. Robust Framer Motion Mock
 vi.mock('framer-motion', () => ({
   motion: {
     div: ({
       children,
-      _whileHover,
-      _whileTap,
-      _initial,
-      _animate,
-      _transition,
+      initial,
+      animate,
+      exit,
+      transition,
+      whileHover,
+      whileTap,
+      whileInView,
+      variants,
       ...props
     }: any) => React.createElement('div', props, children),
     button: ({
       children,
-      _whileHover,
-      _whileTap,
-      _initial,
-      _animate,
-      _transition,
+      initial,
+      animate,
+      exit,
+      transition,
+      whileHover,
+      whileTap,
+      whileInView,
+      variants,
       ...props
     }: any) => React.createElement('button', props, children),
   },
 }));
 
-// 2. Mock useTheme
 vi.mock('../src/useTheme', () => ({
   useTheme: () => false,
 }));
 
-// 3. Mock Chrome API
 (globalThis as any).chrome = {
   runtime: {
     sendMessage: vi.fn((payload, callback) => {
@@ -65,14 +68,12 @@ describe('LinkCardComposer', () => {
 
   it('should render with initial idle state', () => {
     renderWithProviders(<LinkCardComposer url="https://thehill.com/article" />);
-    // Check for the button text defined in your component
     expect(
       screen.getByRole('button', { name: /fetch link metadata/i })
     ).toBeInTheDocument();
   });
 
   it('should display fetched card data', async () => {
-    // Correct tRPC response format: Array of results for batched calls
     server.use(
       http.get('*/api/trpc/og.fetch*', () => {
         return HttpResponse.json([

@@ -4,11 +4,31 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { Composer } from './Composer';
 import { useOgFetch } from '../hooks/useOgFetch';
 import { vi } from 'vitest';
+import React from 'react';
 
-// Mock the useOgFetch hook
+// Mocking framer-motion
+vi.mock('framer-motion', () => ({
+  motion: {
+    div: ({
+      children,
+      initial,
+      animate,
+      transition,
+      ...props
+    }: React.HTMLAttributes<HTMLDivElement> & {
+      initial?: unknown;
+      animate?: unknown;
+      transition?: unknown;
+    }) => <div {...props}>{children}</div>,
+  },
+}));
+
+// Mocking useOgFetch hook
 vi.mock('../hooks/useOgFetch', () => ({
   useOgFetch: vi.fn(),
 }));
+
+const mockUseOgFetch = useOgFetch as jest.Mock; // Using jest.Mock for type safety
 
 const mockSession = {
   did: 'did:plc:123',
@@ -19,10 +39,11 @@ const mockSession = {
 describe('Composer', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (useOgFetch as vi.Mock).mockReturnValue({
+    mockUseOgFetch.mockReturnValue({
       ogData: null,
       isLoading: false,
       handlePaste: vi.fn(),
+      error: null, // Ensure error property is included
     });
   });
 
@@ -41,11 +62,18 @@ describe('Composer', () => {
   });
 
   it('should enable the Post button when there is card data', () => {
-    (useOgFetch as vi.Mock).mockReturnValue({
-      ogData: { url: 'https://example.com' },
+    mockUseOgFetch.mockReturnValue({
+      ogData: {
+        title: 'Test Title',
+        description: 'Test Description',
+        imageUrl: 'https://example.com/image.png',
+        url: 'https://example.com/article',
+      },
       isLoading: false,
       handlePaste: vi.fn(),
+      error: null, // Include error property
     });
+
     render(<Composer session={mockSession} />);
     const postButton = screen.getByRole('button', { name: /Post/i });
     expect(postButton).toBeEnabled();
@@ -57,9 +85,9 @@ describe('Composer', () => {
     fireEvent.change(textarea, { target: { value: 'Hello world' } });
     const postButton = screen.getByRole('button', { name: /Post/i });
 
-    (chrome.runtime.sendMessage as vi.Mock).mockImplementation(
-      (_message: any, callback: (response: any) => void) => {
-        callback({ ok: true });
+    (chrome.runtime.sendMessage as unknown as jest.Mock).mockImplementation(
+      (_message: unknown, callback: unknown) => {
+        (callback as (response: unknown) => void)({ ok: true });
       }
     );
 
@@ -75,7 +103,7 @@ describe('Composer', () => {
   });
 
   it('should render CardPreview when ogData is present', () => {
-    (useOgFetch as vi.Mock).mockReturnValue({
+    mockUseOgFetch.mockReturnValue({
       ogData: {
         title: 'Test Title',
         description: 'Test Description',
@@ -84,7 +112,9 @@ describe('Composer', () => {
       },
       isLoading: false,
       handlePaste: vi.fn(),
+      error: null, // Include error property
     });
+
     render(<Composer session={mockSession} />);
     expect(screen.getByText('Test Title')).toBeInTheDocument();
   });

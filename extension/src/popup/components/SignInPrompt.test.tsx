@@ -12,9 +12,11 @@ describe('SignInPrompt', () => {
   it('should render the heading and body text', () => {
     render(<SignInPrompt />);
     expect(
-      screen.getByRole('heading', { name: /Sign in to Bluesky/i })
+      screen.getByRole('heading', { name: /CardCast isn't connected yet/i })
     ).toBeInTheDocument();
-    expect(screen.getByText(/to start sharing content/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Open bsky\.app in any tab and log in/i)
+    ).toBeInTheDocument();
   });
 
   it('should call chrome.tabs.create when the button is clicked', () => {
