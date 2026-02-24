@@ -62,7 +62,7 @@ build_project:
     paths:
       - .next/
 
-deploy_to_vercel:
+.deploy_to_vercel:
   stage: deploy
   script:
     - npm i -g vercel
@@ -70,7 +70,7 @@ deploy_to_vercel:
   only:
     - main
 
-build_and_push_docker:
+.build_and_push_docker:
   image: docker:20.10.16
   stage: deploy
   services:
