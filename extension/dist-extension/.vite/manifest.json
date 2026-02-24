@@ -1,0 +1,61 @@
+{
+  "../../../@crx/manifest": {
+    "file": "assets/crx-manifest.js-DcIGQgXL.js",
+    "name": "crx-manifest.js",
+    "src": "../../../@crx/manifest",
+    "isEntry": true
+  },
+  "_client-Bk89stmb.js": {
+    "file": "assets/client-Bk89stmb.js",
+    "name": "client",
+    "imports": [
+      "_trpcClient-pMmsmdKh.js"
+    ]
+  },
+  "_contentScript.js-loader-D_GhYy2T.js": {
+    "file": "assets/contentScript.js-loader-D_GhYy2T.js",
+    "src": "_contentScript.js-loader-D_GhYy2T.js"
+  },
+  "_sdk-D4_CDCb-.js": {
+    "file": "assets/sdk-D4_CDCb-.js",
+    "name": "sdk"
+  },
+  "_trpcClient-pMmsmdKh.js": {
+    "file": "assets/trpcClient-pMmsmdKh.js",
+    "name": "trpcClient"
+  },
+  "src/background.ts": {
+    "file": "assets/background.js-C0stYOX5.js",
+    "name": "background.js",
+    "src": "src/background.ts",
+    "isEntry": true,
+    "imports": [
+      "_trpcClient-pMmsmdKh.js",
+      "_sdk-D4_CDCb-.js"
+    ]
+  },
+  "src/contentScript.js": {
+    "file": "assets/contentScript.js-COPEcefK.js",
+    "name": "contentScript.js",
+    "src": "src/contentScript.js",
+    "isEntry": true,
+    "imports": [
+      "_trpcClient-pMmsmdKh.js",
+      "_client-Bk89stmb.js"
+    ]
+  },
+  "src/popup.html": {
+    "file": "assets/popup.html-CnPArFGt.js",
+    "name": "popup.html",
+    "src": "src/popup.html",
+    "isEntry": true,
+    "imports": [
+      "_trpcClient-pMmsmdKh.js",
+      "_client-Bk89stmb.js",
+      "_sdk-D4_CDCb-.js"
+    ],
+    "css": [
+      "assets/popup-D44uRt7E.css"
+    ]
+  }
+}
