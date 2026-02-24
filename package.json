@@ -20,6 +20,7 @@
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
+    "test:skipped": "npx vitest run --reporter=default --reporter=./server/tests/skipped-reporter",
     "docs": "typedoc --out docs/api",
     "docs:watch": "typedoc --out docs/api --watch",
     "ci-lite": "npm ci && npm run lint && npm run typecheck && npm run build:css && npm run build:ext"

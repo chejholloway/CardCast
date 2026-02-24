@@ -1,16 +1,22 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
+import { vi } from 'vitest';
 import { createTestCaller } from '../../tests/testHelpers';
 
-describe('authRouter', () => {
-  beforeEach(() => {
-    // Reset MSW handlers between tests - handled by vitest.setup.ts
-  });
+vi.mock('@vercel/kv', () => ({
+  kv: {
+    get: vi.fn(() => null),
+    set: vi.fn(() => null),
+    del: vi.fn(() => null),
+  },
+}));
 
+describe('authRouter', () => {
   describe('login', () => {
-    it.skip('should return session on successful login', async () => {
+    it('should return session on successful login', async () => {
       const caller = createTestCaller({
         secret: process.env.EXTENSION_SHARED_SECRET,
       });
+
       const result = await caller.auth.login({
         identifier: 'testuser',
         appPassword: 'app-password-123',
@@ -18,8 +24,8 @@ describe('authRouter', () => {
 
       expect(result).toEqual({
         did: 'did:plc:test123',
-        accessJwt: 'test-jwt-token',
         handle: 'testuser.bsky.social',
+        accessJwt: expect.any(String),
         refreshJwt: expect.any(String),
       });
     });
@@ -36,10 +42,11 @@ describe('authRouter', () => {
   });
 
   describe('status', () => {
-    it.skip('should return loggedIn: false (stateless)', async () => {
+    it('should return loggedIn: false (stateless)', async () => {
       const caller = createTestCaller({
         secret: process.env.EXTENSION_SHARED_SECRET,
       });
+
       const result = await caller.auth.status();
 
       expect(result).toEqual({

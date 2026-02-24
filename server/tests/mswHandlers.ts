@@ -1,220 +1,149 @@
 import { http, HttpResponse } from 'msw';
 
+// Reusable OG HTML builder
+const ogHtml = (title: string, description: string, image: string) => `
+  <html><head>
+    <meta property="og:title" content="${title}">
+    <meta property="og:description" content="${description}">
+    <meta property="og:image" content="${image}">
+  </head></html>
+`;
+
 export const handlers = [
-  // Mock successful OG fetch
-  http.post('http://localhost:3000/api/trpc/og.fetch', async () => {
+  // Auth - session verification
+  http.get('https://bsky.social/xrpc/com.atproto.server.getSession', () => {
     return HttpResponse.json({
-      result: {
-        data: {
-          title: 'Test Article',
-          description: 'This is a test article',
-          imageUrl: 'https://example.com/image.jpg',
-        },
-      },
+      did: 'did:plc:test123',
+      handle: 'testuser.bsky.social',
+      email: 'test@example.com',
+      emailConfirmed: true,
     });
   }),
 
-  // Mock successful auth login
-  http.post('http://localhost:3000/api/trpc/auth.login', async () => {
+  // Auth - login (createSession)
+  http.post('https://bsky.social/xrpc/com.atproto.server.createSession', () => {
     return HttpResponse.json({
-      result: {
-        data: {
-          did: 'did:plc:test123',
-          accessJwt: 'test-jwt-token',
-          handle: 'testuser.bsky.social',
-          refreshJwt: 'test-refresh-token',
-        },
-      },
+      did: 'did:plc:test123',
+      accessJwt: 'test-jwt-token-1234567890',
+      handle: 'testuser.bsky.social',
+      refreshJwt: 'test-refresh-token-1234567890',
+      email: 'test@example.com',
+      emailConfirmed: true,
+      active: true,
     });
   }),
 
-  // Mock auth status check
-  http.post('http://localhost:3000/api/trpc/auth.status', async () => {
-    return HttpResponse.json({
-      result: {
-        data: {
-          loggedIn: false,
-          session: null,
-        },
-      },
-    });
-  }),
-
-  // Mock post creation
-  http.post('http://localhost:3000/api/trpc/post.create', async () => {
-    return HttpResponse.json({
-      result: {
-        data: {
-          uri: 'at://did:plc:test/app.bsky.feed.post/test123',
-          cid: 'bafy123test',
-        },
-      },
-    });
-  }),
-
-  // Mock Bluesky API session creation
+  // Auth - session refresh
   http.post(
-    'https://bsky.social/xrpc/com.atproto.server.createSession',
-    async () => {
+    'https://bsky.social/xrpc/com.atproto.server.refreshSession',
+    () => {
       return HttpResponse.json({
         did: 'did:plc:test123',
-        accessJwt: 'test-jwt-token',
-        refreshJwt: 'test-refresh-token',
         handle: 'testuser.bsky.social',
+        accessJwt: 'refreshed-test-jwt-token-long-enough',
+        refreshJwt: 'refreshed-test-refresh-token-long-enough',
       });
     }
   ),
 
-  // Mock OG metadata fetch for thehill.com
-  http.get('https://thehill.com/article', async () => {
-    const mockHtml = `
-      <html>
-        <head>
-          <meta property="og:title" content="Test Article" />
-          <meta property="og:description" content="This is a test article" />
-          <meta property="og:image" content="https://example.com/image.jpg" />
-        </head>
-      </html>
-    `;
-    return new Response(mockHtml, { status: 200 });
+  // Blob upload
+  http.post('https://bsky.social/xrpc/com.atproto.repo.uploadBlob', () => {
+    return HttpResponse.json({
+      blob: {
+        $type: 'blob',
+        ref: {
+          $link: 'bafkreihdwdcefgh4dqkjv67uzcmw37tak336skifc4tzdkqkieabcdefgh',
+        },
+        mimeType: 'image/jpeg',
+        size: 12345,
+      },
+    });
   }),
 
-  // Mock OG metadata fetch for success.com
-  http.get('https://success.com/', async () => {
-    const mockHtml = `
-      <html>
-        <head>
-          <meta property="og:title" content="Mocked Title" />
-          <meta property="og:description" content="Mocked Description" />
-          <meta property="og:image" content="https://example.com/mocked-image.jpg" />
-        </head>
-      </html>
-    `;
-    return new Response(mockHtml, { status: 200 });
+  // Create record
+  http.post('https://bsky.social/xrpc/com.atproto.repo.createRecord', () => {
+    return HttpResponse.json({
+      uri: 'at://did:plc:test123/app.bsky.feed.post/3k7z3s6y2y22a',
+      cid: 'bafyreib2rxk3rybk3aobmv5cjuql3bm2twh4jo5ufzvfpvlnfcmhcxzy4m',
+    });
   }),
 
-  // Mock OG metadata fetch for theroot.com
-  http.get('https://theroot.com/some-article', async () => {
-    const mockHtml = `
-      <html>
-        <head>
-          <meta property="og:title" content="The Root Title" />
-          <meta property="og:description" content="The Root Description" />
-          <meta property="og:image" content="https://example.com/theroot-image.jpg" />
-        </head>
-      </html>
-    `;
-    return new Response(mockHtml, { status: 200 });
-  }),
-
-  // Mock OG metadata fetch for usanews.com
-  http.get('https://usanews.com/some-article', async () => {
-    const mockHtml = `
-      <html>
-        <head>
-          <meta property="og:title" content="USA News Title" />
-          <meta property="og:description" content="USA News Description" />
-          <meta property="og:image" content="https://example.com/usanews-image.jpg" />
-        </head>
-      </html>
-    `;
-    return new Response(mockHtml, { status: 200 });
-  }),
-
-  // Mock OG metadata fetch for thehill.com
-  http.get('https://thehill.com/some-article', async () => {
-    const mockHtml = `
-      <html>
-        <head>
-          <meta property="og:title" content="The Hill Title" />
-          <meta property="og:description" content="The Hill Description" />
-          <meta property="og:image" content="https://example.com/thehill-image.jpg" />
-        </head>
-      </html>
-    `;
-    return new Response(mockHtml, { status: 200 });
-  }),
-
-  // Mock OG metadata fetch for example.com (image)
-  http.get('https://example.com/image.jpg', async () => {
-    return new Response(Buffer.from('fake image data'), {
-      status: 200,
+  // External image download (for uploadImage)
+  http.get('https://example.com/image.jpg', () => {
+    const buffer = Buffer.from([
+      0xff, 0xd8, 0xff, 0xdb, 0x00, 0x43, 0x00, 0xff, 0xd9,
+    ]);
+    return new HttpResponse(buffer, {
       headers: { 'Content-Type': 'image/jpeg' },
     });
   }),
 
-  // Mock Bluesky get session
-  http.get(
-    'https://bsky.social/xrpc/com.atproto.server.getSession',
-    async () => {
-      return HttpResponse.json({
-        did: 'did:plc:test123',
-        handle: 'testuser.bsky.social',
-        accessJwt: 'test-jwt-token',
-        refreshJwt: 'test-refresh-token',
-      });
-    }
-  ),
+  // OG: success.com base URL — used by og.test.ts test 1
+  http.get('https://success.com', () => {
+    return new HttpResponse(
+      ogHtml(
+        'Mocked Title',
+        'Mocked Description',
+        'https://example.com/mocked-image.jpg'
+      ),
+      { headers: { 'Content-Type': 'text/html' } }
+    );
+  }),
 
-  // Mock Bluesky getProfile (single actor)
-  http.post('https://bsky.app/xrpc/app.bsky.actor.getProfile', async () => {
+  // success.com/article — used by post.test.ts (just needs a 200, no OG tags required)
+  http.get('https://success.com/article', () => {
+    return new Response('<html></html>', { status: 200 });
+  }),
+
+  // OG: thehill.com — wildcard covers /article and /some-article
+  http.get('https://thehill.com/:path*', () => {
+    return new HttpResponse(
+      ogHtml(
+        'Test Article',
+        'This is a test article',
+        'https://example.com/image.jpg'
+      ),
+      { headers: { 'Content-Type': 'text/html' } }
+    );
+  }),
+
+  // OG: theroot.com — wildcard for domain loop test
+  http.get('https://theroot.com/:path*', () => {
+    return new HttpResponse(
+      ogHtml(
+        'Root Article',
+        'A test article from The Root',
+        'https://example.com/image.jpg'
+      ),
+      { headers: { 'Content-Type': 'text/html' } }
+    );
+  }),
+
+  // OG: usanews.com — wildcard for domain loop test
+  http.get('https://usanews.com/:path*', () => {
+    return new HttpResponse(
+      ogHtml(
+        'USA News Article',
+        'A test article from USA News',
+        'https://example.com/image.jpg'
+      ),
+      { headers: { 'Content-Type': 'text/html' } }
+    );
+  }),
+
+  // Profile endpoint
+  http.post('https://bsky.app/xrpc/app.bsky.actor.getProfile', () => {
     return HttpResponse.json({
       did: 'did:plc:test123',
       handle: 'testuser.bsky.social',
       displayName: 'Test User',
+      description: 'A test account',
+      avatar: null,
+      banner: null,
+      followersCount: 0,
+      followsCount: 0,
+      postsCount: 0,
+      labels: [],
     });
   }),
-
-  // Mock tRPC profile.getProfile (internal to backend) - not required for endpoint, but helpful in tests
-  http.post('http://localhost:3000/api/trpc/profile.getProfile', async () => {
-    return HttpResponse.json({
-      result: {
-        data: {
-          did: 'did:plc:test123',
-          handle: 'testuser.bsky.social',
-          displayName: 'Test User',
-        },
-      },
-    });
-  }),
-
-  // Mock Bluesky refresh session
-  http.post(
-    'https://bsky.social/xrpc/com.atproto.server.refreshSession',
-    async () => {
-      return HttpResponse.json({
-        did: 'did:plc:test123',
-        handle: 'testuser.bsky.social',
-        accessJwt: 'test-jwt-token-refreshed',
-        refreshJwt: 'test-refresh-token-refreshed',
-      });
-    }
-  ),
-
-  // Mock Bluesky upload blob
-  http.post(
-    'https://bsky.social/xrpc/com.atproto.repo.uploadBlob',
-    async () => {
-      return HttpResponse.json({
-        data: {
-          blob: {
-            ref: { $link: 'bafy123' },
-            mimeType: 'image/jpeg',
-            size: 12345,
-          },
-        },
-      });
-    }
-  ),
-
-  // Mock Bluesky create record (post)
-  http.post(
-    'https://bsky.social/xrpc/com.atproto.repo.createRecord',
-    async () => {
-      return HttpResponse.json({
-        uri: 'at://did:plc:test123/app.bsky.feed.post/test123',
-        cid: 'bafy123test',
-      });
-    }
-  ),
 ];

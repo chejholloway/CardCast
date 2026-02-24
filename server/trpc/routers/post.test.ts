@@ -1,29 +1,35 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
+import { http, HttpResponse } from 'msw';
 import { createTestCaller } from '../../tests/testHelpers';
+import { server } from '../../tests/mswServer';
+
+const validAuth = {
+  accessJwt: 'test-jwt-token-1234567890',
+  did: 'did:plc:test123',
+  handle: 'testuser.bsky.social',
+  refreshJwt: 'test-refresh-token',
+};
+
+const validPost = {
+  text: 'Check out this article',
+  url: 'https://success.com/article',
+  title: 'Test Article',
+  description: 'This is a test article',
+  imageUrl: 'https://example.com/image.jpg',
+};
 
 describe('postRouter.create', () => {
-  beforeEach(() => {
-    // Reset MSW handlers between tests - handled by vitest.setup.ts
-  });
+  afterEach(() => server.resetHandlers());
 
-  it.skip('should create a post with a link card', async () => {
+  it('should create a post with a link card', async () => {
     const caller = createTestCaller({
       secret: process.env.EXTENSION_SHARED_SECRET,
     });
 
-    const input = {
-      text: 'Check out this article',
-      url: 'https://success.com/article',
-      title: 'Test Article',
-      description: 'This is a test article',
-      imageUrl: 'https://example.com/image.jpg',
-      accessJwt: 'test-jwt-token-1234567890',
-      did: 'did:plc:test123',
-      handle: 'testuser.bsky.social',
-      refreshJwt: 'test-refresh-token',
-    };
-
-    const result = await caller.post.create(input);
+    const result = await caller.post.create({
+      post: validPost,
+      auth: validAuth,
+    });
 
     expect(result).toEqual({
       success: true,
@@ -33,40 +39,33 @@ describe('postRouter.create', () => {
   });
 
   it('should throw an error if post creation fails', async () => {
+    server.use(
+      http.post(
+        'https://bsky.social/xrpc/com.atproto.repo.createRecord',
+        () => {
+          return HttpResponse.json(
+            { error: 'InternalServerError', message: 'Bluesky is down' },
+            { status: 500 }
+          );
+        }
+      )
+    );
+
     const caller = createTestCaller({
       secret: process.env.EXTENSION_SHARED_SECRET,
     });
 
-    const input = {
-      text: 'This post will fail',
-      url: 'https://success.com/article',
-      title: 'Test Article',
-      description: 'This is a test article',
-      imageUrl: 'https://example.com/image.jpg',
-      accessJwt: 'test-jwt-token-1234567890',
-      did: 'did:plc:test123',
-      handle: 'testuser.bsky.social',
-      refreshJwt: 'test-refresh-token',
-    };
-
-    await expect(caller.post.create(input)).rejects.toThrow();
+    await expect(
+      caller.post.create({ post: validPost, auth: validAuth })
+    ).rejects.toThrow();
   });
 
   it('should throw UNAUTHORIZED without valid secret', async () => {
-    const mockInput = {
-      text: 'Check out this article',
-      url: 'https://thehill.com/article',
-      title: 'Test Article',
-      description: 'This is a test article',
-      imageUrl: 'https://example.com/image.jpg',
-      accessJwt: 'test-jwt-token-1234567890',
-      did: 'did:plc:test123',
-      handle: 'testuser.bsky.social',
-      refreshJwt: 'test-refresh-token',
-    };
-
     const caller = createTestCaller({ secret: 'invalid-secret' });
-    await expect(caller.post.create(mockInput)).rejects.toThrow();
+
+    await expect(
+      caller.post.create({ post: validPost, auth: validAuth })
+    ).rejects.toThrow();
   });
 
   it('should validate input schema - requires text', async () => {
@@ -74,18 +73,10 @@ describe('postRouter.create', () => {
       secret: process.env.EXTENSION_SHARED_SECRET,
     });
 
-    // Missing required field - text is empty
     await expect(
       caller.post.create({
-        text: '', // Empty text not allowed
-        url: 'https://thehill.com/article',
-        title: 'Test Article',
-        description: 'This is a test article',
-        imageUrl: 'https://example.com/image.jpg',
-        accessJwt: 'test-jwt-token-1234567890',
-        did: 'did:plc:test123',
-        handle: 'testuser.bsky.social',
-        refreshJwt: 'test-refresh-token',
+        post: { ...validPost, text: '' },
+        auth: validAuth,
       })
     ).rejects.toThrow();
   });

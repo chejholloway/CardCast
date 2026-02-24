@@ -1,16 +1,3 @@
-/**
- * @fileoverview Open Graph metadata fetching router.
- *
- * This router fetches and parses Open Graph (OG) metadata from allowed domains.
- * It includes:
- * - Domain whitelist validation (thehill.com, theroot.com, usanews.com)
- * - Rate limiting (10 requests per minute per IP)
- * - 5-second timeout for all fetch operations
- * - Cheerio-based HTML parsing for OG tags
- *
- * @module server/trpc/routers/og
- */
-
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import * as cheerio from 'cheerio';
@@ -19,23 +6,16 @@ import { log } from '../../log';
 import { kv } from '@vercel/kv';
 import { checkRateLimit } from '../../lib/rateLimit';
 
-/** Input schema for OG fetch: a valid URL */
 const ogInputSchema = z.object({
-  /** Full URL to fetch metadata from (must be HTTPS on allowed domain) */
   url: z.string().url(),
 });
 
-/** Output schema for OG fetch: title, description, image URL */
 const ogOutputSchema = z.object({
-  /** og:title meta tag value */
   title: z.string(),
-  /** og:description meta tag value */
   description: z.string(),
-  /** og:image meta tag value (must be a valid URL) */
   imageUrl: z.string().url(),
 });
 
-/** Whitelisted domains for OG metadata fetching */
 const ALLOWED_DOMAINS = [
   'thehill.com',
   'theroot.com',
@@ -44,7 +24,6 @@ const ALLOWED_DOMAINS = [
   'success.com',
 ];
 
-/** Realistic browser User-Agent header for external requests */
 const realisticHeaders: Record<string, string> = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
   Accept:
@@ -52,16 +31,6 @@ const realisticHeaders: Record<string, string> = {
   'Accept-Language': 'en-US,en;q=0.9',
 };
 
-// Simple in-memory rate limiter (resets on cold start)
-
-/**
- * Wrap a promise with a timeout
- * @template T
- * @param {Promise<T>} promise - Promise to wrap
- * @param {number} ms - Timeout in milliseconds
- * @returns {Promise<T>} Promise that rejects if timeout exceeded
- * @throws {TRPCError} INTERNAL_SERVER_ERROR if timeout exceeded
- */
 const withTimeout = async <T>(promise: Promise<T>, ms: number): Promise<T> => {
   let timeoutId: NodeJS.Timeout | undefined;
   const timeoutPromise = new Promise<never>((_, reject) => {
@@ -85,42 +54,7 @@ const withTimeout = async <T>(promise: Promise<T>, ms: number): Promise<T> => {
   }
 };
 
-/**
- * Open Graph Metadata Router
- *
- * Provides procedures for fetching and parsing OG metadata from whitelisted domains.
- * All procedures require the x-extension-secret header (protectedProcedure).
- */
 export const ogRouter = router({
-  /**
-   * Fetch Open Graph metadata from a URL
-   *
-   * Validates that the URL is from an allowed domain, enforces rate limits,
-   * fetches the HTML with realistic headers, and parses OG tags using Cheerio.
-   *
-   * @procedure protectedProcedure (requires x-extension-secret header)
-   * @param {OgFetchInput} input - Object containing the URL to fetch
-   * @returns {OgFetchOutput} Open Graph metadata
-   *
-   * @throws {TRPCError} BAD_REQUEST if domain not whitelisted or rate limit exceeded
-   * @throws {TRPCError} NOT_FOUND with message 'blocked' if HTTP 403 returned
-   * @throws {TRPCError} NOT_FOUND with message 'empty' if HTML response is empty
-   * @throws {TRPCError} NOT_FOUND with message 'missing_tags' if OG tags are incomplete
-   * @throws {TRPCError} INTERNAL_SERVER_ERROR if fetch times out (5s) or other error
-   *
-   * @example
-   * const metadata = await trpc.og.fetch.query({
-   *   url: 'https://thehill.com/some-article'
-   * });
-   * // Returns: {
-   * //   title: 'Article Title',
-   * //   description: 'Article summary...',
-   * //   imageUrl: 'https://...'
-   * // }
-   *
-   * @rate-limiting 10 requests per minute per IP address
-   * @allowed-domains thehill.com, theroot.com, usanews.com
-   */
   fetch: protectedProcedure
     .input(ogInputSchema)
     .output(ogOutputSchema)
@@ -152,9 +86,7 @@ export const ogRouter = router({
       let res: Response;
       try {
         res = await withTimeout(
-          fetch(input.url, {
-            headers: realisticHeaders,
-          }),
+          fetch(input.url, { headers: realisticHeaders }),
           5000
         );
       } catch (error) {
@@ -165,9 +97,7 @@ export const ogRouter = router({
               : JSON.stringify(error),
           url: input.url,
         });
-        if (error instanceof TRPCError) {
-          throw error;
-        }
+        if (error instanceof TRPCError) throw error;
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message:
@@ -176,10 +106,7 @@ export const ogRouter = router({
       }
 
       if (res.status === 403) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'blocked',
-        });
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'blocked' });
       }
 
       if (!res.ok) {
@@ -191,10 +118,7 @@ export const ogRouter = router({
 
       const html = await res.text();
       if (!html.trim()) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'empty',
-        });
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'empty' });
       }
 
       const $ = cheerio.load(html);
@@ -206,31 +130,16 @@ export const ogRouter = router({
         $('meta[property="og:image"]').attr('content')?.trim() || '';
 
       if (!title || !description || !imageUrl) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'missing_tags',
-        });
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'missing_tags' });
       }
 
-      return {
-        title,
-        description,
-        imageUrl,
-      };
-
-      const result = {
-        title,
-        description,
-        imageUrl,
-      };
-
+      // FIX: previously there was a bare `return` here before kv.set,
+      // so the cache write was unreachable dead code. Now we cache then return.
+      const result = { title, description, imageUrl };
       await kv.set(cacheKey, result, { ex: 3600 });
-
       return result;
     }),
 });
 
-/** Type for og.fetch input parameters */
 export type OgFetchInput = z.infer<typeof ogInputSchema>;
-/** Type for og.fetch output: OG metadata for a page */
 export type OgFetchOutput = z.infer<typeof ogOutputSchema>;

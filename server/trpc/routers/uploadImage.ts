@@ -54,13 +54,12 @@ export const uploadImage = async (agent: AtpAgent, imageUrl: string) => {
     let arrayBuffer = await imgRes.arrayBuffer();
     let buffer: Buffer = Buffer.from(new Uint8Array(arrayBuffer));
 
-    const maxSize = 1_000_000; // 1 MB
+    const maxSize = 1_000_000;
     if (buffer.length > maxSize) {
       log.info('Image too large, compressing', {
         originalSize: buffer.length,
         url: imageUrl,
       });
-
       buffer = await sharp(buffer)
         .resize(1200, 630, { fit: 'inside', withoutEnlargement: true })
         .jpeg({ quality: 85 })
@@ -74,12 +73,34 @@ export const uploadImage = async (agent: AtpAgent, imageUrl: string) => {
       }
     }
 
+    // FIX: Call the uploadBlob endpoint directly via fetch instead of going
+    // through the agent. The agent methods (uploadBlob and api.com.atproto.repo.uploadBlob)
+    // both read from the private _session backing field which our
+    // Object.defineProperty workaround doesn't reach. Using fetch directly
+    // with the accessJwt from agent.session means we control the auth header
+    // ourselves and bypass the agent's internal session guard entirely.
+    const serviceUrl =
+      agent.serviceUrl?.toString().replace(/\/$/, '') ?? 'https://bsky.social';
+    const accessJwt = (agent.session as any)?.accessJwt;
+
     const uploadRes = await withTimeout(
-      agent.uploadBlob(buffer, { encoding }),
+      fetch(`${serviceUrl}/xrpc/com.atproto.repo.uploadBlob`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': encoding,
+          Authorization: `Bearer ${accessJwt}`,
+        },
+        body: new Uint8Array(buffer),
+      }),
       10_000
     );
 
-    return uploadRes.data.blob;
+    if (!uploadRes.ok) {
+      throw new Error(`Blob upload failed with status ${uploadRes.status}`);
+    }
+
+    const uploadData = await uploadRes.json();
+    return uploadData.blob;
   } catch (error) {
     log.warn('Thumbnail upload failed', {
       error:
