@@ -203,6 +203,18 @@ type MessageRequest =
   ) => {
     void (async () => {
       try {
+        if (message.type === 'BSKY_SESSION') {
+          await chrome.storage.session.set({ bskySession: message.session });
+          sendResponse({ ok: true });
+          return;
+        }
+
+        if (message.type === 'BSKY_THEME') {
+          await chrome.storage.session.set({ bskyTheme: message.theme });
+          sendResponse({ ok: true });
+          return;
+        }
+
         if (message.type === 'FETCH_OG') {
           const data = await queryClient.fetchQuery({
             queryKey: ['og', message.url],

@@ -79,7 +79,44 @@ const App: React.FC = () => {
   return null;
 };
 
+const extractAndRelaySession = () => {
+  try {
+    const raw = localStorage.getItem('bsky-storage');
+    if (!raw) return;
+
+    const parsed = JSON.parse(raw);
+    const currentAccount = parsed.accounts.find(
+      (acc: any) => acc.did === parsed.currentAccount
+    );
+
+    if (currentAccount) {
+      const { did, accessJwt, handle } = currentAccount;
+      chrome.runtime.sendMessage({
+        type: 'BSKY_SESSION',
+        session: { did, accessJwt, handle },
+      });
+    }
+
+    const isDark = document.documentElement.classList.contains('theme--dark');
+    chrome.runtime.sendMessage({
+      type: 'BSKY_THEME',
+      theme: isDark ? 'dark' : 'light',
+    });
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error('CardCast: Failed to extract bsky.app session', error);
+  }
+};
+
 if (window.location.hostname === 'bsky.app') {
+  extractAndRelaySession();
+
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'bsky-storage') {
+      extractAndRelaySession();
+    }
+  });
+
   const container = document.createElement('div');
   document.body.appendChild(container);
   const root = createRoot(container);

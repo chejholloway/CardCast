@@ -58,3 +58,6 @@ docs/REMAINING_TASKS.md
 docs/Skipped_Tests.md
 server/tests/skipped-reporter.ts
 /extension/dist-extension
+PLAN_OF_ATTACK.md
+
+EXECUTION_PROMPT.md
