@@ -1,7 +1,7 @@
 // Accept any request-like object to facilitate testing with mocks
 import { NextRequest } from 'next/server';
 import { getEnv } from '../env';
-import { log, createLogger } from '../log';
+import { createLogger } from '../log';
 import * as crypto from 'crypto';
 
 export interface TRPCContext {

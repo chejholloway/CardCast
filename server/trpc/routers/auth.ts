@@ -13,7 +13,7 @@ import { AtpAgent } from '@atproto/api';
 import { protectedProcedure, router } from '../base';
 import { getEnv } from '../../env';
 import { log } from '../../log';
-import { deleteSession, getSession, setSession } from '../../lib/session';
+import { deleteSession, setSession } from '../../lib/session';
 
 /** Input schema for Bluesky login: handle/email and app password */
 const loginInputSchema = z.object({

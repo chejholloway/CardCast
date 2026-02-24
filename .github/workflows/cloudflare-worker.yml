@@ -23,8 +23,8 @@ jobs:
       - name: Install dependencies
         run: npm install --legacy-peer-deps
 
-      - name: Run accessibility linting
-        run: npm run lint:a11y
+      - name: Run linter
+        run: npm run lint
 
       - name: Build Worker Extension
         run: npm run build:ext
