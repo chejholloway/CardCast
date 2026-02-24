@@ -7,7 +7,7 @@ import { SettingsPanel } from './popup/components/SettingsPanel';
 import './index.css';
 import { ErrorBoundary } from './ErrorBoundary';
 
-const Popup: React.FC = () => {
+export const Popup: React.FC = () => {
   const { session, theme, loading } = useSession();
   const [view, setView] = useState<'composer' | 'settings'>('composer');
 

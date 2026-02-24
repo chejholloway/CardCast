@@ -41,6 +41,9 @@ if (typeof globalThis !== 'undefined') {
           remove: vi.fn(),
         },
       },
+      tabs: {
+        create: vi.fn(),
+      },
     },
     writable: true,
     configurable: true,
