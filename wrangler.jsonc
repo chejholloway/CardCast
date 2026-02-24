@@ -1,7 +1,8 @@
 {
   "name": "bluesky-card-cast",
   "compatibility_date": "2026-02-23",
+  "account_id" :"3086a7566da7a09d7d7d74a6ec48b5fc",
   "assets": {
-    "directory": "./extension/dist"
+    "directory": "./extension/dist-extension"
   }
 }

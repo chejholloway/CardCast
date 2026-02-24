@@ -40,6 +40,12 @@ lint_code:
   script:
     - npm run lint
 
+accessibility_lint:
+  extends: .cache-node-modules
+  stage: test
+  script:
+    - npm run lint:a11y
+
 typecheck_code:
   extends: .cache-node-modules
   stage: test

@@ -23,6 +23,9 @@ jobs:
       - name: Install dependencies
         run: npm install --legacy-peer-deps
 
+      - name: Run accessibility linting
+        run: npm run lint:a11y
+
       - name: Generate Documentation
         run: npm run docs
 
