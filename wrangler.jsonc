@@ -1,7 +1,7 @@
 {
-  "name": "cardcast-worker",
+  "name": "bluesky-card-cast",
   "compatibility_date": "2026-02-23",
   "assets": {
-    "directory": "./dist"
+    "directory": "./extension/dist"
   }
 }
