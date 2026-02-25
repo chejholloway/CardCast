@@ -6,6 +6,14 @@ stages:
 variables:
   NODE_VERSION: '20.11.0'
 
+cache:
+  key:
+    files:
+      - package-lock.json
+  paths:
+    - .next/cache/
+    - node_modules/
+
 .install_deps:
   before_script:
     - npm ci
@@ -33,7 +41,7 @@ trivy_filesystem_scan:
     name: aquasec/trivy:latest
     entrypoint: [""]
   script:
-    - trivy fs .
+    - trivy fs --exit-code 1 --severity HIGH,CRITICAL .
 
 deploy_vercel:
   stage: deploy
