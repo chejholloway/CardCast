@@ -2,7 +2,7 @@
 
 import { renderHook, act } from '@testing-library/react';
 import { useOgFetch } from './useOgFetch';
-import { vi, type MockedFunction } from 'vitest';
+import { vi } from 'vitest';
 
 const mockOgData = {
   ogTitle: 'Test Title',
