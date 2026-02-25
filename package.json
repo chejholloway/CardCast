@@ -4,20 +4,20 @@
   "private": true,
   "author": "Che' J. Holloway",
   "engines": {
-    "node": "18.x"
+    "node": "22.x"
   },
   "scripts": {
     "prepare": "husky",
     "dev": "next dev",
-    "build": "next build --webpack",
+    "build": "next build --webpack && npm run build:cf",
     "start": "next start",
     "analyze": "cross-env ANALYZE=true npm run build",
     "lint": "npx oxlint --fix . -A jsx-a11y",
     "lint:staged": "npx lint-staged",
     "dev:ext": "vite -c extension/vite.config.ts",
-    "build:ext": "vite build -c extension/vite.config.ts",
+    "build:ext": "vite build -c extension/vite.config.ts --outDir dist",
     "deploy:worker": "npx wrangler deploy",
-    "deploy:cf": "npx wrangler deploy",
+    "deploy:cf": "npm run build:cf && npx wrangler deploy --config wrangler.toml",
     "typecheck": "tsc -p extension/tsconfig.json",
     "test": "vitest",
     "test:ui": "vitest --ui",

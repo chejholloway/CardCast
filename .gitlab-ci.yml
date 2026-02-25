@@ -8,18 +8,18 @@ variables:
 
 before_script:
   - echo "Node version: ${NODE_VERBOSE}"
-  - if [[ "${NODE_VERSION:-18}" != 18* && "${NODE_VERSION:-18}" != "v18"* ]]; then echo "Node 18.x is required"; exit 1; fi
+  - if [[ "${NODE_VERSION:-22}" != 22* && "${NODE_VERSION:-22}" != "v22"* ]]; then echo "Node 22.x is required"; exit 1; fi
 
 build_cf:
   stage: build
-  image: node:18
+  image: node:22
   script:
     - npm ci
     - npm run build:cf
 
 deploy_cf:
   stage: deploy
-  image: node:18
+  image: node:22
   script:
     - npm run guard:deploy
     - npm run deploy:full

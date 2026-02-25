@@ -4,26 +4,53 @@ This guide explains how to build the extension with the correct production confi
 
 ## Quick Start
 
-1. **Set up your environment variables** (already done for you):
-   - The `.env` file in `extension/` directory contains your production values
-   - Backend URL: `https://bluesky-card-cast-extension-8u6iubpsm-chejholloway1s-projects.vercel.app`
-   - Secret: `PHmqQj/o6pl0/7EN1+a1489n5DXvdLo3cs0tAbGoQAs=`
+1. **Use the correct Node.js version**:
+   - This repo targets Node `22.x`.
 
-2. **Build the extension**:
+2. **Set up your environment variables**:
+   - Create `extension/.env` (local dev) or set environment variables in CI/CD.
+   - Required values:
+     - `NEXT_PUBLIC_BACKEND_URL`
+     - `EXTENSION_SHARED_SECRET`
+
+3. **Build the browser extension (for loading unpacked)**:
 
    ```bash
    npm run build:ext
    ```
 
    This will:
-   - Generate `extension/src/config.ts` from your `.env` file
-   - Compile TypeScript to JavaScript in `extension/dist/`
+   - Build the unpacked extension output in `extension/dist/`
 
-3. **Load in browser**:
+4. **Load in browser**:
    - Open `chrome://extensions` (or `edge://extensions`)
    - Enable **Developer Mode**
    - Click **"Load unpacked"**
    - Select the `extension/dist/` folder
+
+## Cloudflare Workers Builds / Wrangler deploy
+
+Cloudflare Workers Builds runs a build command (commonly `npm run build`) and then runs `npx wrangler deploy`.
+
+There are two different extension build outputs used by this repo:
+- `npm run build:ext` writes to `extension/dist/` (this is the folder you load unpacked in your browser).
+- `npm run build:cf` writes to `extension/dist-extension/` (this is the folder Wrangler deploys as assets).
+
+Vite prints output paths relative to the Vite `root` (configured as `extension/` in `extension/vite.config.ts`), so seeing `dist/...` or `dist-extension/...` in the build logs still corresponds to `extension/dist/...` and `extension/dist-extension/...` on disk.
+
+This repo expects Wrangler to find:
+- `main` at `extension/dist-extension/service-worker-loader.js`
+- static assets at `./extension/dist-extension`
+
+To produce that directory locally or in CI, run:
+
+```bash
+npm run build:cf
+```
+
+`build:cf` writes to `extension/dist-extension/` (not `extension/extension/dist-extension/`). If you see a double-nested output path, ensure the `--outDir` passed to Vite is `dist-extension` (relative to the Vite config root at `extension/`).
+
+If your deployment pipeline uses `npm run build`, it should also produce the same directory.
 
 ## How It Works
 

@@ -4,9 +4,8 @@ account_id = "3086a7566da7a09d7d7d74a6ec48b5fc"
 # Wrangler v4 doesn't support the `type` field or `build.upload` in the same way.
 workers_dev = true
 
-[build]
-command = "npm run build:cf"
-cwd = "."
-
-# Main entry point for the Worker after build
+# Main entry point for the Worker (built artifact)
 main = "extension/dist-extension/service-worker-loader.js"
+
+[assets]
+directory = "./extension/dist-extension"
