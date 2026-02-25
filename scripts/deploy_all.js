@@ -36,7 +36,9 @@ if (deployOut.error) process.exit(1);
 const stdout = deployOut.stdout || '';
 const stderr = deployOut.stderr || '';
 const combined = stdout + stderr;
-const urlMatch = combined.match(/https?:\/\/[^ \n]+/);
+
+// Look for actual worker URL, not telemetry/docs URLs
+const urlMatch = combined.match(/https:\/\/[a-z0-9-]+\.workers\.dev[^ \n]*/);
 let healthUrl = null;
 if (urlMatch) {
   healthUrl = urlMatch[0].replace(/\/$/, '') + '/health';

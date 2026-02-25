@@ -19,6 +19,8 @@ build_cf:
 deploy_cf:
   stage: deploy
   image: node:22
+  variables:
+    CLOUDFLARE_API_TOKEN: $CLOUDFLARE_API_TOKEN
   script:
     - npm ci
     - npm run guard:deploy
