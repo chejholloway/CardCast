@@ -4,26 +4,30 @@ stages:
   - deploy
 
 variables:
-  NODE_VERBOSE: '$(node -v)'
+  NODE_VERSION: '20.11.0'
 
-before_script:
-  - node -v
+.install_deps:
+  before_script:
+    - npm ci
 
-build_cf:
+build:
   stage: build
-  image: node:22
+  image: node:${NODE_VERSION}
+  extends: .install_deps
   script:
-    - npm ci
-    - npm run build:cf
+    - npm run build
+  artifacts:
+    paths:
+      - .next/
 
-deploy_cf:
+deploy_vercel:
   stage: deploy
-  image: node:22
-  variables:
-    CLOUDFLARE_API_TOKEN: $CLOUDFLARE_API_TOKEN
+  image: node:${NODE_VERSION}
+  extends: .install_deps
   script:
-    - npm ci
-    - npm run guard:deploy
-    - npm run deploy:full
+    - npm install -g vercel
+    - vercel pull --yes --environment=production --token=$VERCEL_TOKEN
+    - vercel build --token=$VERCEL_TOKEN
+    - vercel deploy --prebuilt --token=$VERCEL_TOKEN
   only:
     - main
