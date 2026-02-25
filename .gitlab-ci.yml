@@ -7,8 +7,7 @@ variables:
   NODE_VERBOSE: '$(node -v)'
 
 before_script:
-  - echo "Node version: ${NODE_VERBOSE}"
-  - if [[ "${NODE_VERSION:-22}" != 22* && "${NODE_VERSION:-22}" != "v22"* ]]; then echo "Node 22.x is required"; exit 1; fi
+  - node -v
 
 build_cf:
   stage: build

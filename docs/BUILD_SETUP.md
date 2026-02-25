@@ -39,7 +39,7 @@ There are two different extension build outputs used by this repo:
 Vite prints output paths relative to the Vite `root` (configured as `extension/` in `extension/vite.config.ts`), so seeing `dist/...` or `dist-extension/...` in the build logs still corresponds to `extension/dist/...` and `extension/dist-extension/...` on disk.
 
 This repo expects Wrangler to find:
-- `main` at `extension/dist-extension/service-worker-loader.js`
+- `main` at `cf-worker.js`
 - static assets at `./extension/dist-extension`
 
 To produce that directory locally or in CI, run:

@@ -8,10 +8,7 @@ const path = require('path');
 const cwd = process.cwd();
 const root = path.resolve(cwd);
 const wranglerToml = path.resolve(root, 'wrangler.toml');
-const canonicalOutput = path.resolve(
-  root,
-  'extension/dist-extension/service-worker-loader.js'
-);
+const canonicalOutput = path.resolve(root, 'cf-worker.js');
 
 function exists(p) {
   try {

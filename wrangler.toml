@@ -5,7 +5,7 @@ account_id = "3086a7566da7a09d7d7d74a6ec48b5fc"
 workers_dev = true
 
 # Main entry point for the Worker (built artifact)
-main = "extension/dist-extension/service-worker-loader.js"
+main = "cf-worker.js"
 
 [assets]
 directory = "./extension/dist-extension"
