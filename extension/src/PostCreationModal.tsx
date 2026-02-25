@@ -110,7 +110,7 @@ export const PostCreationModal: React.FC<PostCreationModalProps> = ({
   } = trpc.og.fetch.useQuery({ url }, { enabled: false });
 
   const createPostMutation = trpc.post.create.useMutation({
-    onError: (error: TRPCClientError<any>) => {
+    onError: (error) => {
       toast.error(`Failed to create post: ${error.message}`);
       Sentry.captureException(error);
     },
@@ -121,15 +121,19 @@ export const PostCreationModal: React.FC<PostCreationModalProps> = ({
 
     createPostMutation.mutate(
       {
-        text: postText,
-        url,
-        title: ogData.title,
-        description: ogData.description,
-        imageUrl: ogData.imageUrl,
-        accessJwt: session.accessJwt,
-        did: session.did,
-        handle: session.handle,
-        refreshJwt: session.refreshJwt,
+        post: {
+          text: postText,
+          url,
+          title: ogData.title,
+          description: ogData.description,
+          imageUrl: ogData.imageUrl,
+        },
+        auth: {
+          accessJwt: session.accessJwt,
+          did: session.did,
+          handle: session.handle,
+          refreshJwt: session.refreshJwt,
+        },
       },
       {
         onSuccess: () => {

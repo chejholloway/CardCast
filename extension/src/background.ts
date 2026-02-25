@@ -241,11 +241,13 @@ type MessageRequest =
           }
 
           const data = await backgroundClient.post.create.mutate({
-            ...message.payload,
-            accessJwt: bskySession.accessJwt,
-            did: bskySession.did,
-            handle: bskySession.handle,
-            refreshJwt: bskySession.refreshJwt,
+            post: message.payload,
+            auth: {
+              accessJwt: bskySession.accessJwt,
+              did: bskySession.did,
+              handle: bskySession.handle,
+              refreshJwt: bskySession.refreshJwt,
+            },
           });
 
           sendResponse({ ok: true, data });
