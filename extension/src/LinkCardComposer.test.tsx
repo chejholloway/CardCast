@@ -20,26 +20,26 @@ vi.mock('framer-motion', () => ({
   motion: {
     div: ({
       children,
-      initial,
+      /*       initial,
       animate,
       exit,
       transition,
       whileHover,
       whileTap,
       whileInView,
-      variants,
+      variants, */
       ...props
     }: any) => React.createElement('div', props, children),
     button: ({
       children,
-      initial,
-      animate,
-      exit,
-      transition,
-      whileHover,
-      whileTap,
-      whileInView,
-      variants,
+      // initial,
+      // animate,
+      // exit,
+      // transition,
+      // whileHover,
+      // whileTap,
+      // whileInView,
+      // variants,
       ...props
     }: any) => React.createElement('button', props, children),
   },

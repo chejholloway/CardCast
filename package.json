@@ -9,7 +9,7 @@
     "build": "next build --webpack",
     "start": "next start",
     "analyze": "cross-env ANALYZE=true npm run build",
-    "lint": "npx oxlint . -A jsx-a11y",
+    "lint": "npx oxlint --fix . -A jsx-a11y",
     "lint:staged": "npx lint-staged",
     "dev:ext": "vite -c extension/vite.config.ts",
     "build:ext": "vite build -c extension/vite.config.ts",
