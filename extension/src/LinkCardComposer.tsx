@@ -26,23 +26,13 @@ export const LinkCardComposer: React.FC<{ url: string }> = ({ url }) => {
 
     if (!data) return;
 
-    chrome.runtime.sendMessage(
-      {
-        type: 'CREATE_POST',
-        payload: {
-          text,
-          url,
-          title: data.title,
-          description: data.description,
-          imageUrl: data.imageUrl,
-        },
-      },
-      (response: { ok: boolean; error?: string }) => {
-        if (!response?.ok) {
-          console.error('Failed to create post', response?.error);
-        }
-      }
-    );
+    createPostMutation.mutate({
+      text,
+      url,
+      title: data.title,
+      description: data.description,
+      imageUrl: data.imageUrl,
+    });
   };
 
   const status = isLoading

@@ -22,7 +22,7 @@ const authSchema = z.object({
 
 export const postRouter = router({
   create: protectedProcedure
-    .input(z.object({ post: postContentSchema, auth: authSchema }))
+    .input(postContentSchema)
     .output(
       z.object({
         success: z.literal(true),
@@ -34,33 +34,37 @@ export const postRouter = router({
       const env = getEnv();
       const agent = new AtpAgent({ service: env.BLUESKY_SERVICE_URL });
 
+      if (!ctx.bskySession) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Bluesky session not found in context',
+        });
+      }
+
       try {
         // session is a getter in newer @atproto/api versions so direct
         // assignment throws at runtime. Object.defineProperty bypasses that.
         Object.defineProperty(agent, 'session', {
           value: {
-            accessJwt: input.auth.accessJwt,
-            did: input.auth.did,
-            handle: input.auth.handle,
-            refreshJwt: input.auth.refreshJwt,
+            ...ctx.bskySession,
             active: true,
           },
           writable: true,
           configurable: true,
         });
 
-        const blobRef = await uploadImage(agent, input.post.imageUrl);
+        const blobRef = await uploadImage(agent, input.imageUrl);
 
         const record: any = {
           $type: 'app.bsky.feed.post',
-          text: input.post.text,
+          text: input.text,
           createdAt: new Date().toISOString(),
           embed: {
             $type: 'app.bsky.embed.external',
             external: {
-              uri: input.post.url,
-              title: input.post.title,
-              description: input.post.description,
+              uri: input.url,
+              title: input.title,
+              description: input.description,
             },
           },
         };
@@ -70,7 +74,7 @@ export const postRouter = router({
         }
 
         const res = await agent.api.com.atproto.repo.createRecord({
-          repo: agent.session?.did || input.auth.did,
+          repo: agent.session?.did || ctx.bskySession.did,
           collection: 'app.bsky.feed.post',
           record,
         });

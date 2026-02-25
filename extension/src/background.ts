@@ -145,16 +145,6 @@ type MessageRequest =
       url: string;
     }
   | {
-      type: 'CREATE_POST';
-      payload: {
-        text: string;
-        url: string;
-        title: string;
-        description: string;
-        imageUrl: string;
-      };
-    }
-  | {
       type: 'AUTH_LOGIN';
       identifier: string;
       appPassword: string;
@@ -225,31 +215,6 @@ type MessageRequest =
             queryFn: () =>
               backgroundClient.og.fetch.query({ url: message.url }),
           });
-          sendResponse({ ok: true, data });
-          return;
-        }
-
-        if (message.type === 'CREATE_POST') {
-          const bskySession = await checkAndRefreshSession();
-
-          if (!bskySession) {
-            sendResponse({
-              ok: false,
-              error: 'NOT_AUTHENTICATED',
-            });
-            return;
-          }
-
-          const data = await backgroundClient.post.create.mutate({
-            post: message.payload,
-            auth: {
-              accessJwt: bskySession.accessJwt,
-              did: bskySession.did,
-              handle: bskySession.handle,
-              refreshJwt: bskySession.refreshJwt,
-            },
-          });
-
           sendResponse({ ok: true, data });
           return;
         }

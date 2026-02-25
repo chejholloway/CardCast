@@ -4,11 +4,19 @@ import { getEnv } from '../env';
 import { createLogger } from '../log';
 import * as crypto from 'crypto';
 
+export interface BskySession {
+  accessJwt: string;
+  did: string;
+  handle: string;
+  refreshJwt: string;
+}
+
 export interface TRPCContext {
   req: NextRequest;
   requestId: string;
   userId?: string;
   sessionId?: string;
+  bskySession?: BskySession;
   log: ReturnType<typeof createLogger>;
 }
 
@@ -18,6 +26,11 @@ export const createTRPCContext = (req: NextRequest): TRPCContext => {
   const requestId = crypto.randomUUID();
   const userId = req.headers.get('x-user-id') || undefined; // Placeholder
   const sessionId = req.headers.get('x-session-id') || undefined; // Placeholder
+  const bskySessionHeader = req.headers.get('x-bsky-session');
+  const bskySession = bskySessionHeader
+    ? (JSON.parse(bskySessionHeader) as BskySession)
+    : undefined;
+
   const contextLogger = createLogger({ requestId, userId, sessionId });
 
   if (secret !== env.EXTENSION_SHARED_SECRET) {
@@ -27,5 +40,5 @@ export const createTRPCContext = (req: NextRequest): TRPCContext => {
     });
   }
 
-  return { req, requestId, userId, sessionId, log: contextLogger };
+  return { req, requestId, userId, sessionId, bskySession, log: contextLogger };
 };

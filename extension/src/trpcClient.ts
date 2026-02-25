@@ -18,10 +18,19 @@ export const trpcClient = createTRPCClient<AppRouter>({
   links: [
     httpBatchLink({
       url: `${BACKEND_URL}/api/trpc`,
-      headers() {
-        return {
+      async headers() {
+        const session = await chrome.storage.session.get('bskySession');
+        const bskySession = session?.bskySession;
+
+        const headers: Record<string, string> = {
           'x-extension-secret': EXTENSION_SHARED_SECRET,
         };
+
+        if (bskySession) {
+          headers['x-bsky-session'] = JSON.stringify(bskySession);
+        }
+
+        return headers;
       },
     }),
   ],

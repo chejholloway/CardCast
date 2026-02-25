@@ -121,19 +121,11 @@ export const PostCreationModal: React.FC<PostCreationModalProps> = ({
 
     createPostMutation.mutate(
       {
-        post: {
-          text: postText,
-          url,
-          title: ogData.title,
-          description: ogData.description,
-          imageUrl: ogData.imageUrl,
-        },
-        auth: {
-          accessJwt: session.accessJwt,
-          did: session.did,
-          handle: session.handle,
-          refreshJwt: session.refreshJwt,
-        },
+        text: postText,
+        url,
+        title: ogData.title,
+        description: ogData.description,
+        imageUrl: ogData.imageUrl,
       },
       {
         onSuccess: () => {
