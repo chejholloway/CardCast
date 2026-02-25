@@ -20,6 +20,21 @@ build:
     paths:
       - .next/
 
+npm_audit:
+  stage: test
+  image: node:${NODE_VERSION}
+  extends: .install_deps
+  script:
+    - npm audit --audit-level=high
+
+trivy_filesystem_scan:
+  stage: test
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
+  script:
+    - trivy fs .
+
 deploy_vercel:
   stage: deploy
   image: node:${NODE_VERSION}
