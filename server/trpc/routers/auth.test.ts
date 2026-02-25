@@ -13,7 +13,7 @@ vi.mock('@vercel/kv', () => ({
 describe('authRouter', () => {
   describe('login', () => {
     it('should return session on successful login', async () => {
-      const caller = createTestCaller({
+      const caller = await createTestCaller({
         secret: process.env.EXTENSION_SHARED_SECRET,
       });
 
@@ -31,7 +31,7 @@ describe('authRouter', () => {
     });
 
     it('should throw UNAUTHORIZED without valid secret', async () => {
-      const caller = createTestCaller({ secret: 'invalid-secret' });
+      const caller = await createTestCaller({ secret: 'invalid-secret' });
       await expect(
         caller.auth.login({
           identifier: 'testuser',
@@ -43,7 +43,7 @@ describe('authRouter', () => {
 
   describe('status', () => {
     it('should return loggedIn: false (stateless)', async () => {
-      const caller = createTestCaller({
+      const caller = await createTestCaller({
         secret: process.env.EXTENSION_SHARED_SECRET,
       });
 
@@ -56,7 +56,7 @@ describe('authRouter', () => {
     });
 
     it('should throw UNAUTHORIZED without valid secret', async () => {
-      const caller = createTestCaller({ secret: 'invalid-secret' });
+      const caller = await createTestCaller({ secret: 'invalid-secret' });
       await expect(caller.auth.status()).rejects.toThrow();
     });
   });

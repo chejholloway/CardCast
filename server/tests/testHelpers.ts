@@ -1,58 +1,42 @@
 // server/tests/testHelpers.ts
 
-import { initTRPC } from '@trpc/server';
-import { appRouter } from '../trpc/router';
+import { appRouter, type AppRouter } from '../trpc/router';
+import { createTRPCContext } from '../trpc/trpcContext';
+import { type AnyProcedure, type inferProcedureInput } from '@trpc/server';
+
 import { createLogger } from '../log';
 
 /**
- * Create a tRPC caller for testing
- * This bypasses HTTP and calls procedures directly
+ * Create a tRPC caller for testing.
+ * This bypasses HTTP and calls procedures directly.
  */
-export interface TestContextOptions {
+export const createTestCaller = async (args: {
   secret?: string;
   origin?: string;
   ip?: string;
-}
-
-export const createTestContext = (options: TestContextOptions = {}) => {
+}) => {
   const headers = new Headers({
     'x-extension-secret':
-      options.secret || process.env.EXTENSION_SHARED_SECRET || 'test-secret',
+      args.secret || process.env.EXTENSION_SHARED_SECRET || 'test-secret',
   });
 
-  if (options.origin) {
-    headers.set('origin', options.origin);
+  if (args.origin) {
+    headers.set('origin', args.origin);
   }
 
-  const logger = createLogger();
+  const req = {
+    headers,
+    ip: args.ip,
+    nextUrl: new URL('http://localhost'), // Mock nextUrl
+  } as any;
 
-  return {
-    req: {
-      headers,
-      ip: options.ip || '127.0.0.1',
-    } as any,
-    res: {} as any, // Add a mock res object
-    log: logger,
-  };
-};
-
-export type TestContext = Awaited<ReturnType<typeof createTestContext>>;
-
-const t = initTRPC.create();
-// Use TRPC's test helper to create a caller factory for the appRouter
-const createCaller = (t.createCallerFactory as any)(appRouter as any);
-
-/**
- * Create a test caller with a given context
- */
-export const createTestCaller = (options: TestContextOptions = {}) => {
-  const context = createTestContext(options);
-  // Invoke the caller factory with the test context
-  return createCaller(context as any);
+  const ctx = await createTRPCContext(req);
+  ctx.log = createLogger(); // Inject logger into context
+  return appRouter.createCaller(ctx);
 };
 
 /**
- * Helper to call a tRPC procedure and catch errors
+ * Helper to call a tRPC procedure and catch errors, returning a typed result.
  */
 export const callProcedure = async <T>(
   fn: () => Promise<T>
@@ -64,3 +48,9 @@ export const callProcedure = async <T>(
     return { error: error instanceof Error ? error : new Error(String(error)) };
   }
 };
+
+/**
+ * Type helper for inferring the input of a tRPC procedure.
+ * @example type OgFetchInput = ProcedureInput<typeof appRouter.og.fetch>;
+ */
+export type ProcedureInput<T extends AnyProcedure> = inferProcedureInput<T>;

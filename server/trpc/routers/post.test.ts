@@ -22,7 +22,7 @@ describe('postRouter.create', () => {
   afterEach(() => server.resetHandlers());
 
   it('should create a post with a link card', async () => {
-    const caller = createTestCaller({
+    const caller = await createTestCaller({
       secret: process.env.EXTENSION_SHARED_SECRET,
     });
 
@@ -51,7 +51,7 @@ describe('postRouter.create', () => {
       )
     );
 
-    const caller = createTestCaller({
+    const caller = await createTestCaller({
       secret: process.env.EXTENSION_SHARED_SECRET,
     });
 
@@ -61,7 +61,7 @@ describe('postRouter.create', () => {
   });
 
   it('should throw UNAUTHORIZED without valid secret', async () => {
-    const caller = createTestCaller({ secret: 'invalid-secret' });
+    const caller = await createTestCaller({ secret: 'invalid-secret' });
 
     await expect(
       caller.post.create({ post: validPost, auth: validAuth })
@@ -69,7 +69,7 @@ describe('postRouter.create', () => {
   });
 
   it('should validate input schema - requires text', async () => {
-    const caller = createTestCaller({
+    const caller = await createTestCaller({
       secret: process.env.EXTENSION_SHARED_SECRET,
     });
 

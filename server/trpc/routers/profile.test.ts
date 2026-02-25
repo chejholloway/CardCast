@@ -8,7 +8,7 @@ describe('profileRouter', () => {
   afterEach(() => server.resetHandlers());
 
   it('should return profile data on successful retrieval', async () => {
-    const caller = createTestCaller({
+    const caller = await createTestCaller({
       secret: process.env.EXTENSION_SHARED_SECRET,
     });
 
@@ -30,7 +30,7 @@ describe('profileRouter', () => {
       })
     );
 
-    const caller = createTestCaller({
+    const caller = await createTestCaller({
       secret: process.env.EXTENSION_SHARED_SECRET,
     });
 
@@ -43,7 +43,7 @@ describe('profileRouter', () => {
   });
 
   it('should throw UNAUTHORIZED without valid secret', async () => {
-    const caller = createTestCaller({ secret: 'invalid-secret' });
+    const caller = await createTestCaller({ secret: 'invalid-secret' });
 
     await expect(
       caller.profile.getProfile({
