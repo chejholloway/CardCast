@@ -20,6 +20,7 @@ deploy_cf:
   stage: deploy
   image: node:22
   script:
+    - npm ci
     - npm run guard:deploy
     - npm run deploy:full
   only:
