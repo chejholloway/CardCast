@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "author": "Che' J. Holloway",
+  "engines": {
+    "node": "18.x"
+  },
   "scripts": {
     "prepare": "husky",
     "dev": "next dev",
@@ -23,7 +26,11 @@
     "test:skipped": "npx vitest run --reporter=default --reporter=./server/tests/skipped-reporter",
     "docs": "typedoc --out docs/api",
     "docs:watch": "typedoc --out docs/api --watch",
-    "ci-lite": "npm ci && npm run lint && npm run typecheck && npm run build:css && npm run build:ext"
+    "ci-lite": "npm ci && npm run lint && npm run typecheck && npm run build:ext",
+    "guard:deploy": "node scripts/deploy_guard.js",
+    "health-check": "node scripts/deploy_health_check.js",
+    "deploy:full": "node scripts/deploy_all.js",
+    "build:cf": "vite build -c extension/vite.config.ts --outDir extension/dist-extension"
   },
   "dependencies": {
     "@atproto/api": "^0.18.21",
@@ -38,11 +45,8 @@
     "@upstash/ratelimit": "^2.0.8",
     "@vercel/kv": "^3.0.0",
     "cheerio": "^1.2.0",
-    "dompurify": "^3.3.1",
     "framer-motion": "^12.34.3",
-    "lodash-es": "^4.17.23",
     "next": "^16.1.6",
-    "node-fetch": "^3.3.2",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-hot-toast": "^2.6.0",
@@ -91,10 +95,10 @@
     "vitest": "^4.0.18"
   },
   "lint-staged": {
-    "*.{ts,tsx,js,jsx}": [
+    "**/*.{ts,tsx,js,jsx}": [
       "prettier --write",
       "oxlint --fix"
     ],
-    "*.{json,md,css}": "prettier --write"
+    "**/*.{json,md,css}": "prettier --write"
   }
 }
