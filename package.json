@@ -30,7 +30,7 @@
     "guard:deploy": "node scripts/deploy_guard.js",
     "health-check": "node scripts/deploy_health_check.js",
     "deploy:full": "node scripts/deploy_all.js",
-    "build:cf": "vite build -c extension/vite.config.ts --outDir extension/dist-extension"
+    "build:cf": "vite build -c extension/vite.config.ts --outDir dist-extension"
   },
   "dependencies": {
     "@atproto/api": "^0.18.21",

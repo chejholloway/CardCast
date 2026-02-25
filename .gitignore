@@ -43,22 +43,9 @@ dist
  
 
 # Documentation & Assessment
-PRODUCTION_READINESS.md
-TESTING_IMPLEMENTATION.md
-BEFORE_AND_AFTER.md
-/Testing Docs
-/DOCUMENTATION_PROGRESS.md
 .env
-SECURITY_AUDIT.md
-.gitignore
-docs/TEST_GETPROFILES_GUIDE.md
-CODEBASE_ANALYSIS_AND_PLAN.md
-docs/UNUSED_ITEMS.md
-docs/REMAINING_TASKS.md
-docs/Skipped_Tests.md
+docs
 server/tests/skipped-reporter.ts
 /extension/dist
-docs/docs/PLAN_OF_ATTACK.md
-
-EXECUTION_PROMPT.md
-
+/extension/dist-extension
+/extension/extension/dist-extension/

@@ -39,7 +39,7 @@ if (!exists(wranglerToml)) {
   );
 }
 
-if (!exists(canonicalOutput)) {
+if (!canonicalOutput || !exists(canonicalOutput)) {
   ok = false;
   errors.push(
     `Canonical build output not found at ${canonicalOutput}. Please run the build first (npm run build:cf).`
