@@ -27,7 +27,7 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "dist/types/**/*.ts",
-    "vitest.config.tsm",
+    "vitest.config.mts",
     "extension/vite.config.mts",
     ".next/dev/types/**/*.ts"
   ],

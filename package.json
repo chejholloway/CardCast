@@ -15,7 +15,7 @@
     "build:ext": "vite build -c extension/vite.config.ts",
     "deploy:worker": "npx wrangler deploy",
     "deploy:cf": "npx wrangler deploy",
-    "typecheck": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p extension/tsconfig.json",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",

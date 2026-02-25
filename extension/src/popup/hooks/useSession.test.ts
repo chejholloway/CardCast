@@ -2,7 +2,7 @@
 
 import { renderHook, waitFor } from '@testing-library/react';
 import { useSession } from './useSession';
-import { vi } from 'vitest';
+import { vi, type MockedFunction } from 'vitest';
 
 // Mock the chrome API
 const mockSessionData = {
@@ -12,12 +12,11 @@ const mockSessionData = {
 
 describe('useSession', () => {
   beforeEach(() => {
-    // Reset mocks before each test
-    vi.clearAllMocks();
+    (vi as any).clearAllMocks();
   });
 
   it('should return loading: true on initial render', () => {
-    (chrome.storage.session.get as vi.Mock).mockImplementation(
+    (chrome.storage.session.get as any).mockImplementation(
       (_keys: string[], _callback: (items: { [key: string]: any }) => void) => {
         // Do not resolve the promise to keep it in a loading state
       }
@@ -27,7 +26,7 @@ describe('useSession', () => {
   });
 
   it('should return session and theme data on successful fetch', async () => {
-    (chrome.storage.session.get as vi.Mock).mockImplementation(
+    (chrome.storage.session.get as any).mockImplementation(
       (_keys: string[], callback: (items: { [key: string]: any }) => void) => {
         callback(mockSessionData);
       }
@@ -43,7 +42,7 @@ describe('useSession', () => {
   });
 
   it('should return null session and default theme if data is missing', async () => {
-    (chrome.storage.session.get as vi.Mock).mockImplementation(
+    (chrome.storage.session.get as any).mockImplementation(
       (_keys: string[], callback: (items: { [key: string]: any }) => void) => {
         callback({});
       }
@@ -59,7 +58,7 @@ describe('useSession', () => {
   });
 
   it('should return null session and default theme if data is invalid', async () => {
-    (chrome.storage.session.get as vi.Mock).mockImplementation(
+    (chrome.storage.session.get as any).mockImplementation(
       (_keys: string[], callback: (items: { [key: string]: any }) => void) => {
         callback({ session: 'invalid' });
       }

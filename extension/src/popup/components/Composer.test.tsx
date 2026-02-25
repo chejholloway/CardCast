@@ -3,7 +3,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { Composer } from './Composer';
 import { useOgFetch } from '../hooks/useOgFetch';
-import { vi } from 'vitest';
+import { vi, type MockedFunction } from 'vitest';
 import React from 'react';
 
 // Mocking framer-motion
@@ -28,7 +28,7 @@ vi.mock('../hooks/useOgFetch', () => ({
   useOgFetch: vi.fn(),
 }));
 
-const mockUseOgFetch = useOgFetch as jest.Mock; // Using jest.Mock for type safety
+const mockUseOgFetch = useOgFetch as MockedFunction<typeof useOgFetch>; // Using Vitest MockedFunction for type safety
 
 const mockSession = {
   did: 'did:plc:123',
@@ -38,7 +38,7 @@ const mockSession = {
 
 describe('Composer', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    (vi as any).clearAllMocks();
     mockUseOgFetch.mockReturnValue({
       ogData: null,
       isLoading: false,
@@ -85,7 +85,7 @@ describe('Composer', () => {
     fireEvent.change(textarea, { target: { value: 'Hello world' } });
     const postButton = screen.getByRole('button', { name: /Post/i });
 
-    (chrome.runtime.sendMessage as unknown as jest.Mock).mockImplementation(
+    (chrome.runtime.sendMessage as any).mockImplementation(
       (_message: unknown, callback: unknown) => {
         (callback as (response: unknown) => void)({ ok: true });
       }

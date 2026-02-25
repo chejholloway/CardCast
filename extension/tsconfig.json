@@ -5,13 +5,19 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "strict": true,
-    "noEmit": false,
+    "noEmit": true,
     "jsx": "react-jsx",
     "esModuleInterop": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "types": ["chrome", "vitest/globals", "@testing-library/jest-dom"],
+    "types": [
+      "chrome",
+      "vitest/globals",
+      "vitest",
+      "@testing-library/jest-dom",
+      "node"
+    ],
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"],

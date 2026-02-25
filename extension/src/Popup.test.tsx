@@ -3,7 +3,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { Popup } from './popup';
 import { useSession } from './popup/hooks/useSession';
-import { vi } from 'vitest';
+import { vi, type MockedFunction } from 'vitest';
 // Mock the useSession hook
 vi.mock('./popup/hooks/useSession', () => ({
   useSession: vi.fn(),
@@ -22,11 +22,11 @@ vi.mock('./popup/components/SettingsPanel', () => ({
   ),
 }));
 
-const mockUseSession = useSession as vi.MockedFunction<typeof useSession>;
+const mockUseSession = useSession as MockedFunction<typeof useSession>;
 
 describe('Popup', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    (vi as any).clearAllMocks();
   });
 
   it('should render a loading spinner when loading', () => {

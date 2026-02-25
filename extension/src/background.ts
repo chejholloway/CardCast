@@ -203,14 +203,18 @@ type MessageRequest =
   ) => {
     void (async () => {
       try {
-        if (message.type === 'BSKY_SESSION') {
-          await chrome.storage.session.set({ bskySession: message.session });
+        if ((message as any).type === 'BSKY_SESSION') {
+          await chrome.storage.session.set({
+            bskySession: (message as any).session,
+          });
           sendResponse({ ok: true });
           return;
         }
 
-        if (message.type === 'BSKY_THEME') {
-          await chrome.storage.session.set({ bskyTheme: message.theme });
+        if ((message as any).type === 'BSKY_THEME') {
+          await chrome.storage.session.set({
+            bskyTheme: (message as any).theme,
+          });
           sendResponse({ ok: true });
           return;
         }

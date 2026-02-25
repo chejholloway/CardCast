@@ -1,0 +1,22 @@
+
+> bluesky-card-cast-ext@0.1.0 typecheck
+> tsc -p extension/tsconfig.json
+
+extension/src/background.ts(206,13): error TS2367: This comparison appears to be unintentional because the types '"CREATE_POST" | "FETCH_OG" | "AUTH_LOGIN" | "AUTH_STATUS"' and '"BSKY_SESSION"' have no overlap.
+extension/src/background.ts(207,67): error TS2339: Property 'session' does not exist on type 'never'.
+extension/src/background.ts(212,13): error TS2367: This comparison appears to be unintentional because the types '"CREATE_POST" | "FETCH_OG" | "AUTH_LOGIN" | "AUTH_STATUS"' and '"BSKY_THEME"' have no overlap.
+extension/src/background.ts(213,65): error TS2339: Property 'theme' does not exist on type 'never'.
+extension/src/config.ts(2,3): error TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+extension/src/config.ts(4,3): error TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+extension/src/config.ts(5,27): error TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+extension/src/Popup.test.tsx(25,38): error TS2503: Cannot find namespace 'vi'.
+extension/src/popup/components/Composer.test.tsx(31,43): error TS2694: Namespace 'global.jest' has no exported member 'Mock'.
+extension/src/popup/components/Composer.test.tsx(88,52): error TS2694: Namespace 'global.jest' has no exported member 'Mock'.
+extension/src/popup/hooks/useOgFetch.test.ts(27,36): error TS2503: Cannot find namespace 'vi'.
+extension/src/popup/hooks/useOgFetch.test.ts(51,36): error TS2503: Cannot find namespace 'vi'.
+extension/src/popup/hooks/useOgFetch.test.ts(74,36): error TS2503: Cannot find namespace 'vi'.
+extension/src/popup/hooks/useOgFetch.test.ts(95,36): error TS2503: Cannot find namespace 'vi'.
+extension/src/popup/hooks/useSession.test.ts(20,36): error TS2503: Cannot find namespace 'vi'.
+extension/src/popup/hooks/useSession.test.ts(30,36): error TS2503: Cannot find namespace 'vi'.
+extension/src/popup/hooks/useSession.test.ts(46,36): error TS2503: Cannot find namespace 'vi'.
+extension/src/popup/hooks/useSession.test.ts(62,36): error TS2503: Cannot find namespace 'vi'.

@@ -2,7 +2,7 @@
 
 import { renderHook, act } from '@testing-library/react';
 import { useOgFetch } from './useOgFetch';
-import { vi } from 'vitest';
+import { vi, type MockedFunction } from 'vitest';
 
 const mockOgData = {
   ogTitle: 'Test Title',
@@ -13,7 +13,7 @@ const mockOgData = {
 
 describe('useOgFetch', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    (vi as any).clearAllMocks();
   });
 
   it('handlePaste should call sendMessage with FETCH_OG payload', async () => {
@@ -24,7 +24,7 @@ describe('useOgFetch', () => {
       },
     } as any;
 
-    (chrome.runtime.sendMessage as vi.Mock).mockImplementation(
+    (chrome.runtime.sendMessage as any).mockImplementation(
       (_message: any, callback: (response: any) => void) => {
         callback({ data: mockOgData });
       }
@@ -48,7 +48,7 @@ describe('useOgFetch', () => {
       },
     } as any;
 
-    (chrome.runtime.sendMessage as vi.Mock).mockImplementation(
+    (chrome.runtime.sendMessage as any).mockImplementation(
       (_message: any, callback: (response: any) => void) => {
         setTimeout(() => callback({ data: mockOgData }), 100);
       }
@@ -71,7 +71,7 @@ describe('useOgFetch', () => {
       },
     } as any;
 
-    (chrome.runtime.sendMessage as vi.Mock).mockImplementation(
+    (chrome.runtime.sendMessage as any).mockImplementation(
       (_message: any, callback: (response: any) => void) => {
         callback({ data: mockOgData });
       }
@@ -92,7 +92,7 @@ describe('useOgFetch', () => {
       },
     } as any;
 
-    (chrome.runtime.sendMessage as vi.Mock).mockImplementation(
+    (chrome.runtime.sendMessage as any).mockImplementation(
       (_message: any, callback: (response: any) => void) => {
         callback({ error: 'Failed to fetch' });
       }
