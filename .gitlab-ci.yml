@@ -4,7 +4,7 @@ stages:
   - deploy
 
 variables:
-  NODE_VERSION: '20.11.0'
+  NODE_VERSION: '22.14.0'
 
 cache:
   key:
@@ -43,14 +43,3 @@ trivy_filesystem_scan:
   script:
     - trivy fs --exit-code 1 --severity HIGH,CRITICAL .
 
-deploy_vercel:
-  stage: deploy
-  image: node:${NODE_VERSION}
-  extends: .install_deps
-  script:
-    - npm install -g vercel
-    - vercel pull --yes --environment=production --token=$VERCEL_TOKEN
-    - vercel build --token=$VERCEL_TOKEN
-    - vercel deploy --prebuilt --token=$VERCEL_TOKEN
-  only:
-    - main
