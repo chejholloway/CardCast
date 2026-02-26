@@ -3,14 +3,14 @@
  */
 import { createTRPCReact } from '@trpc/react-query';
 import { createTRPCClient, httpBatchLink } from '@trpc/client';
-import type { AppRouter } from '@server/trpc/router';
+import type { AppRouter } from './types/trpc';
 import { BACKEND_URL, EXTENSION_SHARED_SECRET } from './config';
 
 const getHeaders = () => {
   if (process.env.NODE_ENV === 'test') {
-    return () => ({
+    return {
       'x-extension-secret': EXTENSION_SHARED_SECRET,
-    });
+    };
   }
   return async () => {
     const session = await chrome.storage.session.get('bskySession');
@@ -40,7 +40,10 @@ export const trpcClient = createTRPCClient<AppRouter>({
   links: [
     httpBatchLink({
       url: `${BACKEND_URL}/api/trpc`,
-      headers: getHeaders(),
+      headers:
+        process.env.NODE_ENV === 'test'
+          ? (getHeaders() as Record<string, string>)
+          : getHeaders(),
     }),
   ],
 });
@@ -52,7 +55,10 @@ export const backgroundClient = createTRPCClient<AppRouter>({
   links: [
     httpBatchLink({
       url: `${BACKEND_URL}/api/trpc`,
-      headers: getHeaders(),
+      headers:
+        process.env.NODE_ENV === 'test'
+          ? (getHeaders() as Record<string, string>)
+          : getHeaders(),
     }),
   ],
 });
