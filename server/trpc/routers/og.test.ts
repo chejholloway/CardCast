@@ -32,7 +32,7 @@ describe('ogRouter.fetch', () => {
 
   it('should fetch OG metadata for allowed domain', async () => {
     const caller = await createTestCaller({
-      secret: process.env.EXTENSION_SHARED_SECRET,
+      secret: process.env.EXTENSION_SHARED_SECRET || 'test-secret-12345',
     });
     const result = await caller.og.fetch({
       url: 'https://thehill.com/article',
@@ -50,7 +50,7 @@ describe('ogRouter.fetch', () => {
 
     for (const domain of domainsToTest) {
       const caller = await createTestCaller({
-        secret: process.env.EXTENSION_SHARED_SECRET,
+        secret: process.env.EXTENSION_SHARED_SECRET || 'test-secret-12345',
       });
       const testUrl = `https://${domain}/some-article`; // Using a placeholder article path
 

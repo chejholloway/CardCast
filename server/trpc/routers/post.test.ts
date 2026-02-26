@@ -23,7 +23,7 @@ describe('postRouter.create', () => {
 
   it('should create a post with a link card', async () => {
     const caller = await createTestCaller({
-      'x-extension-secret': 'test-secret-12345',
+      'x-extension-secret': 'test-secret-key-0000',
       'x-bsky-session': JSON.stringify(validAuth),
     });
 
@@ -50,7 +50,7 @@ describe('postRouter.create', () => {
     );
 
     const caller = await createTestCaller({
-      'x-extension-secret': 'test-secret-12345',
+      'x-extension-secret': 'test-secret-key-0000',
       'x-bsky-session': JSON.stringify(validAuth),
     });
 
@@ -59,7 +59,7 @@ describe('postRouter.create', () => {
 
   it('should throw UNAUTHORIZED without a bsky session', async () => {
     const unauthorizedCaller = await createTestCaller({
-      'x-extension-secret': 'test-secret-12345',
+      'x-extension-secret': 'test-secret-key-0000',
     });
 
     await expect(unauthorizedCaller.post.create(validPost)).rejects.toThrow(

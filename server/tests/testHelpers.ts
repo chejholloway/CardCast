@@ -10,7 +10,7 @@ import { createLogger } from '../log';
  * This bypasses HTTP and calls procedures directly.
  */
 export const createTestCaller = async (
-  headers: Record<string, string | undefined>
+  headers: Record<string, string | undefined> & { secret?: string }
 ) => {
   const testHeaders = new Headers();
   for (const [key, value] of Object.entries(headers)) {
@@ -20,7 +20,7 @@ export const createTestCaller = async (
   }
 
   if (!testHeaders.has('x-extension-secret')) {
-    testHeaders.set('x-extension-secret', 'test-secret-12345');
+    testHeaders.set('x-extension-secret', 'test-secret-key-0000');
   }
 
   // Do not auto-populate Bluesky session for tests. Tests that require a session
