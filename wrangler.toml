@@ -4,8 +4,13 @@ account_id = "3086a7566da7a09d7d7d74a6ec48b5fc"
 # Wrangler v4 doesn't support the `type` field or `build.upload` in the same way.
 workers_dev = true
 
+[vars]
+EXTENSION_SHARED_SECRET= = "test-secret-key-0000"
+ENVIRONMENT = "production"
+
 # Main entry point for the Worker (built artifact)
 main = "cf-worker.js"
+
 
 [assets]
 directory = "./extension/dist-extension"
