@@ -30,3 +30,20 @@ jobs:
         run: npm run build:cf
       - name: Unit tests
         run: npm test -- --run
+  deploy-worker:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm ci
+      - name: Build Cloudflare worker
+        run: npm run build:cf
+      - name: Deploy to Cloudflare
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: CLOUDFLARE_API_TOKEN

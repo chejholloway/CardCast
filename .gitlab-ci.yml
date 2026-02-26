@@ -4,43 +4,24 @@ stages:
   - deploy
 
 variables:
-  NODE_VERSION: '22.14.0'
+  NODE_VERSION: "22"
 
-cache:
-  key:
-    files:
-      - package-lock.json
-  paths:
-    - .next/cache/
-    - node_modules/
-
-.install_deps:
+default:
+  image: node:${NODE_VERSION}
+  cache:
+    key:
+      files:
+        - package-lock.json
+    paths:
+      - .next/cache/
+      - node_modules/
   before_script:
     - npm ci
 
 build:
   stage: build
-  image: node:${NODE_VERSION}
-  extends: .install_deps
   script:
     - npm run build
-  variables:
-    EXTENSION_SHARED_SECRET: $EXTENSION_SHARED_SECRET    
   artifacts:
     paths:
       - .next/
-
-# npm_audit:
-#   stage: test
-#   image: node:${NODE_VERSION}
-#   extends: .install_deps
-#   script:
-#     - npm audit --audit-level=high
-
-# trivy_filesystem_scan:
-#   stage: test
-#   image:
-#     name: aquasec/trivy:latest
-#     entrypoint: [""]
-#   script:
-#     - trivy fs --exit-code 1 --severity HIGH,CRITICAL .
