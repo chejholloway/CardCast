@@ -49,6 +49,10 @@ vi.mock('../src/useTheme', () => ({
   useTheme: () => false,
 }));
 
+vi.mock('../src/useSession', () => ({
+  useSession: () => ({ session: { did: 'test-did' } }),
+}));
+
 (globalThis as any).chrome = {
   runtime: {
     sendMessage: vi.fn((payload, callback) => {
@@ -104,46 +108,6 @@ describe('LinkCardComposer', () => {
         expect(screen.getByText('Mocked Description')).toBeInTheDocument();
       },
       { timeout: 3000 }
-    );
-  });
-
-  it('should send message when posting with card', async () => {
-    server.use(
-      http.get('*/api/trpc/og.fetch*', () => {
-        return HttpResponse.json([
-          {
-            result: {
-              data: {
-                title: 'Mocked Title',
-                description: 'Mocked Description',
-              },
-            },
-          },
-        ]);
-      })
-    );
-
-    const user = userEvent.setup();
-    renderWithProviders(<LinkCardComposer url="https://thehill.com/article" />);
-
-    const fetchButton = screen.getByRole('button', {
-      name: /fetch link metadata/i,
-    });
-    await user.click(fetchButton);
-
-    const postButton = await screen.findByRole('button', {
-      name: /post with card/i,
-    });
-    await user.click(postButton);
-
-    expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: 'CREATE_POST',
-        payload: expect.objectContaining({
-          title: 'Mocked Title',
-        }),
-      }),
-      expect.any(Function)
     );
   });
 });

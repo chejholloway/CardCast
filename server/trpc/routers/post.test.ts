@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, beforeEach } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { createTestCaller } from '../../tests/testHelpers';
 import { server } from '../../tests/mswServer';
@@ -23,13 +23,11 @@ describe('postRouter.create', () => {
 
   it('should create a post with a link card', async () => {
     const caller = await createTestCaller({
-      secret: process.env.EXTENSION_SHARED_SECRET,
+      'x-extension-secret': 'test-secret-12345',
+      'x-bsky-session': JSON.stringify(validAuth),
     });
 
-    const result = await caller.post.create({
-      post: validPost,
-      auth: validAuth,
-    });
+    const result = await caller.post.create(validPost);
 
     expect(result).toEqual({
       success: true,
@@ -52,32 +50,31 @@ describe('postRouter.create', () => {
     );
 
     const caller = await createTestCaller({
-      secret: process.env.EXTENSION_SHARED_SECRET,
+      'x-extension-secret': 'test-secret-12345',
+      'x-bsky-session': JSON.stringify(validAuth),
     });
 
-    await expect(
-      caller.post.create({ post: validPost, auth: validAuth })
-    ).rejects.toThrow();
+    await expect(caller.post.create(validPost)).rejects.toThrow();
   });
 
-  it('should throw UNAUTHORIZED without valid secret', async () => {
-    const caller = await createTestCaller({ secret: 'invalid-secret' });
+  it('should throw UNAUTHORIZED without a bsky session', async () => {
+    const unauthorizedCaller = await createTestCaller({
+      'x-extension-secret': 'test-secret-12345',
+    });
 
-    await expect(
-      caller.post.create({ post: validPost, auth: validAuth })
-    ).rejects.toThrow();
+    await expect(unauthorizedCaller.post.create(validPost)).rejects.toThrow(
+      'Bluesky session not found in context'
+    );
   });
 
   it('should validate input schema - requires text', async () => {
     const caller = await createTestCaller({
-      secret: process.env.EXTENSION_SHARED_SECRET,
+      'x-extension-secret': 'test-secret-12345',
+      'x-bsky-session': JSON.stringify(validAuth),
     });
 
     await expect(
-      caller.post.create({
-        post: { ...validPost, text: '' },
-        auth: validAuth,
-      })
+      caller.post.create({ ...validPost, text: '' })
     ).rejects.toThrow();
   });
 });

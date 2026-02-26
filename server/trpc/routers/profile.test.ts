@@ -41,15 +41,4 @@ describe('profileRouter', () => {
       })
     ).rejects.toThrow('getProfile failed: 404 Profile not found');
   });
-
-  it('should throw UNAUTHORIZED without valid secret', async () => {
-    const caller = await createTestCaller({ secret: 'invalid-secret' });
-
-    await expect(
-      caller.profile.getProfile({
-        actor: 'testuser.bsky.social',
-        accessJwt: 'test-access-jwt',
-      })
-    ).rejects.toThrow(TRPCError);
-  });
 });

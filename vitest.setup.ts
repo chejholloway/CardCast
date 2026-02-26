@@ -36,7 +36,7 @@ if (typeof globalThis !== 'undefined') {
       },
       storage: {
         session: {
-          get: vi.fn(),
+          get: vi.fn().mockResolvedValue({ bskySession: { did: 'test-did' } }),
           set: vi.fn(),
           remove: vi.fn(),
         },

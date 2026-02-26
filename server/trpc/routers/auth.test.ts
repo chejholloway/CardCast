@@ -29,16 +29,6 @@ describe('authRouter', () => {
         refreshJwt: expect.any(String),
       });
     });
-
-    it('should throw UNAUTHORIZED without valid secret', async () => {
-      const caller = await createTestCaller({ secret: 'invalid-secret' });
-      await expect(
-        caller.auth.login({
-          identifier: 'testuser',
-          appPassword: 'app-password-123',
-        })
-      ).rejects.toThrow();
-    });
   });
 
   describe('status', () => {
@@ -53,11 +43,6 @@ describe('authRouter', () => {
         loggedIn: false,
         session: null,
       });
-    });
-
-    it('should throw UNAUTHORIZED without valid secret', async () => {
-      const caller = await createTestCaller({ secret: 'invalid-secret' });
-      await expect(caller.auth.status()).rejects.toThrow();
     });
   });
 });

@@ -34,6 +34,25 @@ export const postRouter = router({
       const env = getEnv();
       const agent = new AtpAgent({ service: env.BLUESKY_SERVICE_URL });
 
+      // Ensure Bluesky session exists, with a fallback to header-based parsing
+      // in case ctx.bskySession wasn't populated by the context middleware
+      // during tests or edge scenarios.
+      if (!ctx.bskySession) {
+        try {
+          // Attempt to read from the raw request header as a fallback
+          const hdr = (ctx.req as any)?.headers?.get?.('x-bsky-session');
+          if (hdr) {
+            ctx.bskySession = JSON.parse(hdr) as {
+              accessJwt: string;
+              did: string;
+              handle: string;
+              refreshJwt: string;
+            };
+          }
+        } catch {
+          // ignore parse errors, will throw below if still missing
+        }
+      }
       if (!ctx.bskySession) {
         throw new TRPCError({
           code: 'UNAUTHORIZED',

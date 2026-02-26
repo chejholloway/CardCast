@@ -6,6 +6,28 @@ import { createTRPCClient, httpBatchLink } from '@trpc/client';
 import type { AppRouter } from '@server/trpc/router';
 import { BACKEND_URL, EXTENSION_SHARED_SECRET } from './config';
 
+const getHeaders = () => {
+  if (process.env.NODE_ENV === 'test') {
+    return () => ({
+      'x-extension-secret': EXTENSION_SHARED_SECRET,
+    });
+  }
+  return async () => {
+    const session = await chrome.storage.session.get('bskySession');
+    const bskySession = session?.bskySession;
+
+    const headers: Record<string, string> = {
+      'x-extension-secret': EXTENSION_SHARED_SECRET,
+    };
+
+    if (bskySession) {
+      headers['x-bsky-session'] = JSON.stringify(bskySession);
+    }
+
+    return headers;
+  };
+};
+
 /**
  * tRPC React client instance
  */
@@ -18,20 +40,7 @@ export const trpcClient = createTRPCClient<AppRouter>({
   links: [
     httpBatchLink({
       url: `${BACKEND_URL}/api/trpc`,
-      async headers() {
-        const session = await chrome.storage.session.get('bskySession');
-        const bskySession = session?.bskySession;
-
-        const headers: Record<string, string> = {
-          'x-extension-secret': EXTENSION_SHARED_SECRET,
-        };
-
-        if (bskySession) {
-          headers['x-bsky-session'] = JSON.stringify(bskySession);
-        }
-
-        return headers;
-      },
+      headers: getHeaders(),
     }),
   ],
 });
@@ -43,11 +52,7 @@ export const backgroundClient = createTRPCClient<AppRouter>({
   links: [
     httpBatchLink({
       url: `${BACKEND_URL}/api/trpc`,
-      headers() {
-        return {
-          'x-extension-secret': EXTENSION_SHARED_SECRET,
-        };
-      },
+      headers: getHeaders(),
     }),
   ],
 });

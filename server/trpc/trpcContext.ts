@@ -27,6 +27,7 @@ export const createTRPCContext = (req: NextRequest): TRPCContext => {
   const userId = req.headers.get('x-user-id') || undefined; // Placeholder
   const sessionId = req.headers.get('x-session-id') || undefined; // Placeholder
   const bskySessionHeader = req.headers.get('x-bsky-session');
+
   const bskySession = bskySessionHeader
     ? (JSON.parse(bskySessionHeader) as BskySession)
     : undefined;

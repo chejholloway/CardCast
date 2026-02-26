@@ -1,5 +1,4 @@
-// server/tests/testHelpers.ts
-
+import { initTRPC } from '@trpc/server';
 import { appRouter, type AppRouter } from '../trpc/router';
 import { createTRPCContext } from '../trpc/trpcContext';
 import { type AnyProcedure, type inferProcedureInput } from '@trpc/server';
@@ -10,29 +9,38 @@ import { createLogger } from '../log';
  * Create a tRPC caller for testing.
  * This bypasses HTTP and calls procedures directly.
  */
-export const createTestCaller = async (args: {
-  secret?: string;
-  origin?: string;
-  ip?: string;
-}) => {
-  const headers = new Headers({
-    'x-extension-secret':
-      args.secret || process.env.EXTENSION_SHARED_SECRET || 'test-secret',
-  });
-
-  if (args.origin) {
-    headers.set('origin', args.origin);
+export const createTestCaller = async (
+  headers: Record<string, string | undefined>
+) => {
+  const testHeaders = new Headers();
+  for (const [key, value] of Object.entries(headers)) {
+    if (value) {
+      testHeaders.set(key, value);
+    }
   }
 
+  if (!testHeaders.has('x-extension-secret')) {
+    testHeaders.set('x-extension-secret', 'test-secret-12345');
+  }
+
+  // Do not auto-populate Bluesky session for tests. Tests that require a session
+  // should provide 'x-bsky-session' explicitly to simulate real behavior.
+
+  // Create a mock request that matches NextRequest interface
   const req = {
-    headers,
-    ip: args.ip,
-    nextUrl: new URL('http://localhost'), // Mock nextUrl
+    headers: testHeaders,
+    nextUrl: new URL('http://localhost'),
   } as any;
 
+  // Create context using the same function as the real app
   const ctx = await createTRPCContext(req);
-  ctx.log = createLogger(); // Inject logger into context
-  return appRouter.createCaller(ctx);
+  ctx.log = createLogger();
+
+  // Create tRPC instance and caller factory (like the original working version)
+  const t = initTRPC.create();
+  const createCaller = (t.createCallerFactory as any)(appRouter as any);
+
+  return createCaller(ctx);
 };
 
 /**

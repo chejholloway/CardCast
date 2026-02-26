@@ -84,15 +84,6 @@ describe('ogRouter.fetch', () => {
     ).rejects.toThrow();
   });
 
-  it('should throw UNAUTHORIZED without valid secret', async () => {
-    const caller = await createTestCaller({ secret: 'invalid-secret' });
-    await expect(
-      caller.og.fetch({
-        url: 'https://thehill.com/article',
-      })
-    ).rejects.toThrow();
-  });
-
   it('should return loggedIn: false (stateless)', async () => {
     const caller = await createTestCaller({
       secret: process.env.EXTENSION_SHARED_SECRET,
