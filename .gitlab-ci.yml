@@ -24,6 +24,8 @@ build:
   extends: .install_deps
   script:
     - npm run build
+  variables:
+    EXTENSION_SHARED_SECRET: $EXTENSION_SHARED_SECRET    
   artifacts:
     paths:
       - .next/
