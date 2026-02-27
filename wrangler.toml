@@ -13,6 +13,3 @@ ENVIRONMENT = "production"
 # Main entry point for the Worker (built artifact)
 main = "cf-worker.js"
 
-
-# [assets]
-# directory = "./extension/dist-extension"
