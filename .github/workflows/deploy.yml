@@ -1,0 +1,136 @@
+name: CI, Preview, & Production Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  # Build & Test (runs on ALL pushes/PRs)
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      extension-sha: ${{ steps.hash.outputs.extension-sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Node version check
+        run: |
+          echo "Node version: $(node -v)"
+          if [[ "$(node -v)" != v22.* ]]; then
+            echo "ERROR: Node 22.x required"; exit 1
+          fi
+      - name: Install dependencies
+        run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build extension
+        run: npm run build:ext
+        env:
+          EXTENSION_SHARED_SECRET: ${{ secrets.EXTENSION_SHARED_SECRET }}
+      - name: Build Cloudflare worker
+        run: npm run build:cf
+        env:
+          EXTENSION_SHARED_SECRET: ${{ secrets.EXTENSION_SHARED_SECRET }}
+      - name: Unit tests
+        run: npm test -- --run
+      
+      # Hash for artifact caching
+      - id: hash
+        run: echo "extension-sha=$(sha256sum extension/dist-extension | head -c 64)" >> $GITHUB_OUTPUT
+
+  # Preview Worker Deploy (PRs only)
+  preview-worker:
+    needs: build
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm ci
+      - name: Build everything
+        run: |
+          npm run build:ext
+          npm run build:cf
+        env:
+          EXTENSION_SHARED_SECRET: ${{ secrets.EXTENSION_SHARED_SECRET }}
+      - name: Deploy Preview Worker
+        run: |
+          npx wrangler deploy --name bluesky-card-cast-preview-${{ github.head_ref || github.sha_short }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          EXTENSION_SHARED_SECRET: ${{ secrets.EXTENSION_SHARED_SECRET }}
+
+  # Production Worker Deploy (main only)
+  deploy-worker:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm ci
+      - name: Build everything
+        run: |
+          npm run build:ext
+          npm run build:cf
+        env:
+          EXTENSION_SHARED_SECRET: ${{ secrets.EXTENSION_SHARED_SECRET }}
+      - name: Deploy Production Worker
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          EXTENSION_SHARED_SECRET: ${{ secrets.EXTENSION_SHARED_SECRET }}
+
+  # GitHub Pages Preview (PRs → gh-pages branch)
+  preview-pages:
+    needs: build
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm ci
+      - name: Build extension for Pages
+        run: npm run build:ext
+        env:
+          EXTENSION_SHARED_SECRET: ${{ secrets.EXTENSION_SHARED_SECRET }}
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./extension/dist-extension
+
+  # Deploy Pages (main → yourusername.github.io/repo)
+  deploy-pages:
+    needs: preview-pages
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
