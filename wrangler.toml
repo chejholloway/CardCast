@@ -16,6 +16,3 @@ main = "cf-worker.js"
 # Your actual static assets directory
 [assets]
 directory = "./extension/dist-extension"
-
-[vars]
-EXTENSION_SHARED_SECRET = "${EXTENSION_SHARED_SECRET}"
