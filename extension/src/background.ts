@@ -151,6 +151,18 @@ type MessageRequest =
     }
   | {
       type: 'AUTH_STATUS';
+    }
+  | {
+      type: 'CREATE_POST';
+      payload: {
+        text: string;
+        url: string;
+        title: string;
+        description: string;
+        imageUrl: string;
+        accessJwt: string;
+        did: string;
+      };
     };
 /**
  * Routes incoming messages from content scripts and popup to appropriate tRPC handlers
@@ -264,6 +276,28 @@ type MessageRequest =
                 ? error
                 : JSON.stringify(error),
         });
+      }
+      if (message.type === 'CREATE_POST') {
+        // Guard against unauthenticated calls even though the server uses
+        // shared-secret middleware -- belt and suspenders.
+        const session = await checkAndRefreshSession();
+        if (!session) {
+          sendResponse({ ok: false, error: 'Not authenticated' });
+          return;
+        }
+
+        // accessJwt and did are NOT part of the post.create Zod schema.
+        // The server handles Bluesky auth internally via the shared secret.
+        const data = await backgroundClient.post.create.mutate({
+          text: message.payload.text,
+          url: message.payload.url,
+          title: message.payload.title,
+          description: message.payload.description,
+          imageUrl: message.payload.imageUrl,
+        });
+
+        sendResponse({ ok: true, data });
+        return;
       }
     })();
 

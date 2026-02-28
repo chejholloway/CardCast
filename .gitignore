@@ -53,3 +53,4 @@ server/tests/skipped-reporter.ts
 cardcast-debug-prompt.md
 .gitignore
 cardcast-gemini-prompt.md
+CardCast-file-structure.md
