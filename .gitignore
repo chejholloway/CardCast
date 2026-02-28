@@ -54,3 +54,5 @@ cardcast-debug-prompt.md
 .gitignore
 cardcast-gemini-prompt.md
 CardCast-file-structure.md
+test_fetch.js
+test_Headers.ts

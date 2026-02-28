@@ -13,7 +13,6 @@ import { AtpAgent } from '@atproto/api';
 import { protectedProcedure, router } from '../base';
 import { getEnv } from '../../env';
 import { log } from '../../log';
-import { deleteSession, setSession } from '../../lib/session';
 
 /** Input schema for Bluesky login: handle/email and app password */
 const loginInputSchema = z.object({
@@ -109,8 +108,6 @@ export const authRouter = router({
         refreshJwt,
       };
 
-      await setSession(did, session);
-
       return session;
     }),
 
@@ -172,8 +169,6 @@ export const authRouter = router({
           refreshJwt: agent.session.refreshJwt,
         };
 
-        await setSession(session.did, session);
-
         return session;
       } catch (error) {
         log.warn('Session refresh failed', {
@@ -227,11 +222,6 @@ export const authRouter = router({
       const env = getEnv();
       const agent = new AtpAgent({
         service: env.BLUESKY_SERVICE_URL,
-        persistSession: (_evt, session) => {
-          if (session) {
-            setSession(session.did, session as AuthSession);
-          }
-        },
       });
 
       try {
@@ -281,7 +271,7 @@ export const authRouter = router({
   logout: protectedProcedure
     .input(z.object({ did: z.string() }))
     .mutation(async ({ input }) => {
-      await deleteSession(input.did);
+      // Backend is stateless; extension clears local storage.
       return { success: true };
     }),
 });

@@ -2,7 +2,7 @@
 
 import { renderHook, waitFor } from '@testing-library/react';
 import { useSession } from './useSession';
-import { vi } from 'vitest';
+import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 // Mock the chrome API
 const mockSessionData = {

@@ -31,28 +31,33 @@ const handler = async (req: NextRequest) => {
     return new Response(null, { status: 200, headers });
   }
 
-  const origin = req.headers.get('origin');
   const res = await fetchRequestHandler({
     endpoint: '/api/trpc',
     req,
     router: appRouter,
     createContext: () => createTRPCContext(req),
+    onError: ({ error, path }) => {
+      console.error(`tRPC Error on ${path}:`, error);
+    },
   });
 
-  // Attach CORS headers to the actual response
-  const headers = new Headers(res.headers);
-  if (origin) headers.set('Access-Control-Allow-Origin', origin);
-  else headers.set('Access-Control-Allow-Origin', '*');
-  headers.set(
+  const origin = req.headers.get('origin');
+  if (origin) {
+    res.headers.set('Access-Control-Allow-Origin', origin);
+  } else {
+    res.headers.set('Access-Control-Allow-Origin', '*');
+  }
+
+  res.headers.set(
     'Access-Control-Allow-Methods',
     'GET,POST,PUT,PATCH,DELETE,OPTIONS'
   );
-  headers.set(
+  res.headers.set(
     'Access-Control-Allow-Headers',
     'Content-Type, Authorization, x-extension-secret'
   );
 
-  return new Response(res.body, { status: res.status, headers });
+  return res;
 };
 
-export { handler as GET, handler as POST };
+export { handler as GET, handler as POST, handler as OPTIONS };
