@@ -20,6 +20,8 @@ const authSchema = z.object({
   refreshJwt: z.string().min(10),
 });
 
+console.info('Auth Schema: ', authSchema);
+
 export const postRouter = router({
   create: protectedProcedure
     .input(postContentSchema)

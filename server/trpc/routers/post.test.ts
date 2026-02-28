@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach, beforeEach } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { createTestCaller } from '../../tests/testHelpers';
 import { server } from '../../tests/mswServer';

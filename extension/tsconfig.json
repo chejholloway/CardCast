@@ -16,7 +16,8 @@
       "vitest/globals",
       "vitest",
       "@testing-library/jest-dom",
-      "node"
+      "node",
+      "vite/client"
     ],
     "baseUrl": ".",
     "paths": {

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { trpc } from './trpcClient';
-import { TRPCClientError } from '@trpc/client';
 import { useSession } from './useSession';
 import type { OgData } from './types';
 import toast, { Toaster } from 'react-hot-toast';

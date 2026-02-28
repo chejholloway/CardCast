@@ -2,7 +2,6 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { createTestCaller } from '../../tests/testHelpers';
 import { server } from '../../tests/mswServer';
-import { TRPCError } from '@trpc/server';
 
 describe('profileRouter', () => {
   afterEach(() => server.resetHandlers());

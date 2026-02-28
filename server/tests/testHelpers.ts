@@ -1,5 +1,5 @@
 import { initTRPC } from '@trpc/server';
-import { appRouter, type AppRouter } from '../trpc/router';
+import { appRouter } from '../trpc/router';
 import { createTRPCContext } from '../trpc/trpcContext';
 import { type AnyProcedure, type inferProcedureInput } from '@trpc/server';
 
