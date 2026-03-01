@@ -10,6 +10,10 @@ const ogHtml = (title: string, description: string, image: string) => `
 `;
 
 export const handlers = [
+  // Mock Microlink to test cheerio fallback
+  http.get('https://api.microlink.io/', () => {
+    return HttpResponse.json({ status: 'error' });
+  }),
   // Auth - session verification
   http.get('https://bsky.social/xrpc/com.atproto.server.getSession', () => {
     return HttpResponse.json({
