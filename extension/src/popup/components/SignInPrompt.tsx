@@ -11,10 +11,14 @@ export const SignInPrompt: React.FC = () => {
     setLoading(true);
     setError('');
 
-    // Field names must match background.ts AUTH_LOGIN handler:
-    // message.identifier and message.appPassword (not payload.handle/password)
+    // Strip leading @ if the user included it — Bluesky's API expects
+    // "chejholloway.bsky.social", not "@chejholloway.bsky.social".
+    const normalizedIdentifier = identifier.startsWith('@')
+      ? identifier.slice(1)
+      : identifier;
+
     chrome.runtime.sendMessage(
-      { type: 'AUTH_LOGIN', identifier, appPassword },
+      { type: 'AUTH_LOGIN', identifier: normalizedIdentifier, appPassword },
       (response) => {
         setLoading(false);
         if (response?.ok) {
