@@ -5,7 +5,7 @@ import { createTRPCContext } from '../../../../server/trpc/trpcContext';
 
 export const runtime = 'nodejs';
 
-function getCorsHeaders(origin: string | null): HeadersInit {
+function getCorsHeaders(origin: string | null): Record<string, string> {
   return {
     'Access-Control-Allow-Origin': origin ?? '*',
     'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
@@ -17,7 +17,6 @@ function getCorsHeaders(origin: string | null): HeadersInit {
 const handler = async (req: NextRequest) => {
   const origin = req.headers.get('origin');
 
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, {
       status: 200,
@@ -35,17 +34,18 @@ const handler = async (req: NextRequest) => {
     },
   });
 
-  // Clone the response with CORS headers appended.
-  // Do NOT mutate res.headers directly — the Response object returned by
-  // fetchRequestHandler may have immutable headers in the Node.js runtime,
-  // and a silent throw there is what produces the empty body.
+  // Read the body as text before the stream gets locked or consumed.
+  // Passing res.body (a ReadableStream) directly to new Response() causes
+  // an empty body on Vercel's Node runtime when the stream has already
+  // been touched internally by fetchRequestHandler.
+  const body = await res.text();
+
   const headers = new Headers(res.headers);
-  const corsHeaders = getCorsHeaders(origin);
-  Object.entries(corsHeaders).forEach(([key, value]) => {
+  Object.entries(getCorsHeaders(origin)).forEach(([key, value]) => {
     headers.set(key, value);
   });
 
-  return new Response(res.body, {
+  return new Response(body, {
     status: res.status,
     statusText: res.statusText,
     headers,
