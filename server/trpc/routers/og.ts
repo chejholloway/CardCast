@@ -54,6 +54,79 @@ const withTimeout = async <T>(promise: Promise<T>, ms: number): Promise<T> => {
   }
 };
 
+/**
+ * Try Microlink first — it handles JS-rendered pages.
+ * Returns null if the response is missing any required field so the
+ * caller can fall back to cheerio.
+ */
+const fetchViaLicrolink = async (
+  url: string
+): Promise<{ title: string; description: string; imageUrl: string } | null> => {
+  try {
+    const microlinkUrl = `https://api.microlink.io?url=${encodeURIComponent(url)}&screenshot=false`;
+    const res = await withTimeout(fetch(microlinkUrl), 8000);
+    if (!res.ok) return null;
+
+    const json = await res.json();
+    if (json.status !== 'success') return null;
+
+    const title = json.data?.title?.trim() || '';
+    const description = json.data?.description?.trim() || '';
+    const imageUrl = json.data?.image?.url?.trim() || '';
+
+    if (!title || !description || !imageUrl) return null;
+
+    return { title, description, imageUrl };
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Cheerio-based scraper as fallback for sites that serve full HTML
+ * without JS rendering. Tries OG tags, then Twitter Card, then
+ * standard HTML meta tags.
+ */
+const fetchViaCheerio = async (
+  url: string
+): Promise<{ title: string; description: string; imageUrl: string } | null> => {
+  let res: Response;
+  try {
+    res = await withTimeout(fetch(url, { headers: realisticHeaders }), 5000);
+  } catch {
+    return null;
+  }
+
+  if (!res.ok) return null;
+
+  const html = await res.text();
+  if (!html.trim()) return null;
+
+  const $ = cheerio.load(html);
+
+  const title =
+    $('meta[property="og:title"]').attr('content')?.trim() ||
+    $('meta[name="twitter:title"]').attr('content')?.trim() ||
+    $('title').first().text().trim() ||
+    '';
+
+  const description =
+    $('meta[property="og:description"]').attr('content')?.trim() ||
+    $('meta[name="twitter:description"]').attr('content')?.trim() ||
+    $('meta[name="description"]').attr('content')?.trim() ||
+    '';
+
+  const imageUrl =
+    $('meta[property="og:image"]').attr('content')?.trim() ||
+    $('meta[name="twitter:image"]').attr('content')?.trim() ||
+    $('meta[name="twitter:image:src"]').attr('content')?.trim() ||
+    '';
+
+  if (!title || !description || !imageUrl) return null;
+
+  return { title, description, imageUrl };
+};
+
 export const ogRouter = router({
   fetch: protectedProcedure
     .input(ogInputSchema)
@@ -76,8 +149,6 @@ export const ogRouter = router({
       }
 
       const urlObj = new URL(input.url);
-      // Strip www. so both "theroot.com" and "www.theroot.com" match the
-      // same allowlist entry.
       const hostname = urlObj.hostname.replace(/^www\./, '');
       if (!ALLOWED_DOMAINS.includes(hostname)) {
         throw new TRPCError({
@@ -86,78 +157,23 @@ export const ogRouter = router({
         });
       }
 
-      let res: Response;
-      try {
-        res = await withTimeout(
-          fetch(input.url, { headers: realisticHeaders }),
-          5000
-        );
-      } catch (error) {
-        log.error('OG fetch failed', {
-          error:
-            error instanceof Error
-              ? error.stack || error.message
-              : JSON.stringify(error),
+      // Try Microlink first (handles JS-rendered pages), then fall back
+      // to cheerio for sites that serve full static HTML.
+      log.info('Fetching OG via Microlink', { url: input.url });
+      let result = await fetchViaLicrolink(input.url);
+
+      if (!result) {
+        log.info('Microlink miss, falling back to cheerio', { url: input.url });
+        result = await fetchViaCheerio(input.url);
+      }
+
+      if (!result) {
+        log.warn('Both Microlink and cheerio failed to extract OG tags', {
           url: input.url,
-        });
-        if (error instanceof TRPCError) throw error;
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message:
-            error instanceof Error ? error.message : 'Failed to fetch URL',
-        });
-      }
-
-      if (res.status === 403) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'blocked' });
-      }
-
-      if (!res.ok) {
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: `Upstream error: ${res.status}`,
-        });
-      }
-
-      const html = await res.text();
-      if (!html.trim()) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'empty' });
-      }
-
-      const $ = cheerio.load(html);
-
-      // Fall back through OG -> Twitter Card -> standard HTML tags.
-      // Some sites (e.g. G/O Media properties like theroot.com) serve
-      // Twitter Card tags instead of OG tags to non-social crawlers.
-      const title =
-        $('meta[property="og:title"]').attr('content')?.trim() ||
-        $('meta[name="twitter:title"]').attr('content')?.trim() ||
-        $('title').first().text().trim() ||
-        '';
-
-      const description =
-        $('meta[property="og:description"]').attr('content')?.trim() ||
-        $('meta[name="twitter:description"]').attr('content')?.trim() ||
-        $('meta[name="description"]').attr('content')?.trim() ||
-        '';
-
-      const imageUrl =
-        $('meta[property="og:image"]').attr('content')?.trim() ||
-        $('meta[name="twitter:image"]').attr('content')?.trim() ||
-        $('meta[name="twitter:image:src"]').attr('content')?.trim() ||
-        '';
-
-      if (!title || !description || !imageUrl) {
-        log.warn('Missing OG/meta tags', {
-          url: input.url,
-          hasTitle: Boolean(title),
-          hasDescription: Boolean(description),
-          hasImage: Boolean(imageUrl),
         });
         throw new TRPCError({ code: 'NOT_FOUND', message: 'missing_tags' });
       }
 
-      const result = { title, description, imageUrl };
       await kv.set(cacheKey, result, { ex: 3600 });
       return result;
     }),
