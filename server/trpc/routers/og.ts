@@ -76,7 +76,10 @@ export const ogRouter = router({
       }
 
       const urlObj = new URL(input.url);
-      if (!ALLOWED_DOMAINS.includes(urlObj.hostname)) {
+      // Strip www. so both "theroot.com" and "www.theroot.com" match the
+      // same allowlist entry.
+      const hostname = urlObj.hostname.replace(/^www\./, '');
+      if (!ALLOWED_DOMAINS.includes(hostname)) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
           message: 'Domain not allowed',
@@ -133,8 +136,6 @@ export const ogRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'missing_tags' });
       }
 
-      // FIX: previously there was a bare `return` here before kv.set,
-      // so the cache write was unreachable dead code. Now we cache then return.
       const result = { title, description, imageUrl };
       await kv.set(cacheKey, result, { ex: 3600 });
       return result;
