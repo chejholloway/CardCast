@@ -1,4 +1,3 @@
-// Accept any request-like object to facilitate testing with mocks
 import { NextRequest } from 'next/server';
 import { getEnv } from '../env';
 import { createLogger } from '../log';
@@ -24,13 +23,19 @@ export const createTRPCContext = (req: NextRequest): TRPCContext => {
   const env = getEnv();
   const secret = req.headers.get('x-extension-secret');
   const requestId = crypto.randomUUID();
-  const userId = req.headers.get('x-user-id') || undefined; // Placeholder
-  const sessionId = req.headers.get('x-session-id') || undefined; // Placeholder
+  const userId = req.headers.get('x-user-id') || undefined;
+  const sessionId = req.headers.get('x-session-id') || undefined;
   const bskySessionHeader = req.headers.get('x-bsky-session');
 
-  const bskySession = bskySessionHeader
-    ? (JSON.parse(bskySessionHeader) as BskySession)
-    : undefined;
+  let bskySession: BskySession | undefined;
+  if (bskySessionHeader) {
+    try {
+      bskySession = JSON.parse(bskySessionHeader) as BskySession;
+    } catch {
+      // Malformed header — ignore and proceed without a session.
+      // The auth middleware will reject the request if a session is required.
+    }
+  }
 
   const contextLogger = createLogger({ requestId, userId, sessionId });
 

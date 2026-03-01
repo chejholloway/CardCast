@@ -35,11 +35,6 @@ if (SENTRY_DSN) {
   });
 }
 
-/**
- * Shared React Query client for the service worker
- * Configured with automatic retries (2 for queries, 1 for mutations)
- * and exponential backoff up to 10 seconds
- */
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -53,26 +48,16 @@ const queryClient = new QueryClient({
   },
 });
 
-/**
- * Check if JWT token is expired or expiring soon
- * @param {string} jwt - JWT token to check
- * @param {number} bufferMinutes - Minutes before expiry to consider expired (default: 5)
- * @returns {boolean} True if token is expired or expiring soon
- */
 const isTokenExpiring = (jwt: string, bufferMinutes = 5): boolean => {
   try {
     const payload = JSON.parse(atob(jwt.split('.')[1]));
-    const expiresAt = payload.exp * 1000; // Convert to milliseconds
+    const expiresAt = payload.exp * 1000;
     return Date.now() > expiresAt - bufferMinutes * 60 * 1000;
   } catch {
-    return true; // If we can't parse, assume expired
+    return true;
   }
 };
 
-/**
- * Check session and refresh if needed
- * @returns {Promise<Session | null>} Refreshed session or null if refresh failed
- */
 const checkAndRefreshSession = async (): Promise<{
   accessJwt: string;
   did: string;
@@ -81,17 +66,11 @@ const checkAndRefreshSession = async (): Promise<{
 } | null> => {
   const session = await chrome.storage.session.get(['bskySession']);
   const bskySession = session.bskySession as
-    | {
-        accessJwt: string;
-        did: string;
-        handle: string;
-        refreshJwt: string;
-      }
+    | { accessJwt: string; did: string; handle: string; refreshJwt: string }
     | undefined;
 
   if (!bskySession) return null;
 
-  // Check if token is expiring within 5 minutes
   if (isTokenExpiring(bskySession.accessJwt)) {
     try {
       const refreshed = await backgroundClient.auth.refresh.mutate({
@@ -99,11 +78,9 @@ const checkAndRefreshSession = async (): Promise<{
         did: bskySession.did,
         handle: bskySession.handle,
       });
-
       await chrome.storage.session.set({ bskySession: refreshed });
       return refreshed;
     } catch {
-      // Refresh failed, clear session
       await chrome.storage.session.remove(['bskySession']);
       return null;
     }
@@ -112,46 +89,10 @@ const checkAndRefreshSession = async (): Promise<{
   return bskySession;
 };
 
-/**
- * Message types supported by the service worker
- *
- * @typedef {Object} MessageRequest
- * @property {"FETCH_OG"} type - Fetch Open Graph metadata
- * @property {string} url - URL to fetch metadata for
- *
- * OR
- *
- * @property {"CREATE_POST"} type - Create a Bluesky post with link card
- * @property {Object} payload - Post creation payload
- * @property {string} payload.text - Post text content
- * @property {string} payload.url - Link URL
- * @property {string} payload.title - Link title
- * @property {string} payload.description - Link description
- * @property {string} payload.imageUrl - Preview image URL
- *
- * OR
- *
- * @property {"AUTH_LOGIN"} type - Authenticate with Bluesky
- * @property {string} identifier - Bluesky handle or email
- * @property {string} appPassword - Bluesky app password (not user password)
- *
- * OR
- *
- * @property {"AUTH_STATUS"} type - Get authentication status
- */
 type MessageRequest =
-  | {
-      type: 'FETCH_OG';
-      url: string;
-    }
-  | {
-      type: 'AUTH_LOGIN';
-      identifier: string;
-      appPassword: string;
-    }
-  | {
-      type: 'AUTH_STATUS';
-    }
+  | { type: 'FETCH_OG'; url: string }
+  | { type: 'AUTH_LOGIN'; identifier: string; appPassword: string }
+  | { type: 'AUTH_STATUS' }
   | {
       type: 'CREATE_POST';
       payload: {
@@ -160,44 +101,12 @@ type MessageRequest =
         title: string;
         description: string;
         imageUrl: string;
-        accessJwt: string;
-        did: string;
+        // NOTE: accessJwt and did are intentionally excluded — the server
+        // handles Bluesky auth internally via the shared secret middleware.
       };
     };
-/**
- * Routes incoming messages from content scripts and popup to appropriate tRPC handlers
- *
- * Asynchronously processes requests and sends responses via callback.
- * Always returns `true` to indicate async response handling.
- *
- * @param {MessageRequest} message - Message from content script/popup
- * @param {chrome.runtime.MessageSender} _sender - Sender metadata (unused)
- * @param {Function} sendResponse - Callback to send response back to sender
- * @returns {true} Indicate async response handling
- *
- * @example
- * // Content script fetches metadata
- * chrome.runtime.sendMessage(
- *   { type: "FETCH_OG", url: "https://thehill.com/article" },
- *   (response) => console.log(response.data)
- * );
- *
- * @example
- * // Create a post with link card
- * chrome.runtime.sendMessage({
- *   type: "CREATE_POST",
- *   payload: {
- *     text: "Check this out",
- *     url: "https://thehill.com/article",
- *     title: "Article Title",
- *     description: "Article description",
- *     imageUrl: "https://example.com/image.png"
- *   }
- * }, (response) => {
- *   if (response.ok) console.log("Posted with URI:", response.data.uri);
- *   else console.error("Post failed:", response.error);
- * });
- */ chrome.runtime.onMessage.addListener(
+
+chrome.runtime.onMessage.addListener(
   (
     message: MessageRequest,
     _sender,
@@ -255,18 +164,33 @@ type MessageRequest =
           const bskySession = session.bskySession ?? null;
           sendResponse({
             ok: true,
-            data: {
-              loggedIn: Boolean(bskySession),
-              session: bskySession,
-            },
+            data: { loggedIn: Boolean(bskySession), session: bskySession },
           });
           return;
         }
+
+        // CREATE_POST is inside the try/catch so errors are caught and
+        // sendResponse is guaranteed to fire on every code path.
+        if (message.type === 'CREATE_POST') {
+          const session = await checkAndRefreshSession();
+          if (!session) {
+            sendResponse({ ok: false, error: 'Not authenticated' });
+            return;
+          }
+
+          const data = await backgroundClient.post.create.mutate({
+            text: message.payload.text,
+            url: message.payload.url,
+            title: message.payload.title,
+            description: message.payload.description,
+            imageUrl: message.payload.imageUrl,
+          });
+
+          sendResponse({ ok: true, data });
+          return;
+        }
       } catch (error) {
-        // Log error for debugging
-        // eslint-disable-next-line no-console
         console.error('Background error:', error);
-        // We intentionally only send a safe error message back to the caller.
         sendResponse({
           ok: false,
           error:
@@ -277,31 +201,8 @@ type MessageRequest =
                 : JSON.stringify(error),
         });
       }
-      if (message.type === 'CREATE_POST') {
-        // Guard against unauthenticated calls even though the server uses
-        // shared-secret middleware -- belt and suspenders.
-        const session = await checkAndRefreshSession();
-        if (!session) {
-          sendResponse({ ok: false, error: 'Not authenticated' });
-          return;
-        }
-
-        // accessJwt and did are NOT part of the post.create Zod schema.
-        // The server handles Bluesky auth internally via the shared secret.
-        const data = await backgroundClient.post.create.mutate({
-          text: message.payload.text,
-          url: message.payload.url,
-          title: message.payload.title,
-          description: message.payload.description,
-          imageUrl: message.payload.imageUrl,
-        });
-
-        sendResponse({ ok: true, data });
-        return;
-      }
     })();
 
-    // Indicate that we'll respond asynchronously.
     return true;
   }
 );
