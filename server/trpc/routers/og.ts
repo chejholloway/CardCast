@@ -125,14 +125,35 @@ export const ogRouter = router({
       }
 
       const $ = cheerio.load(html);
+
+      // Fall back through OG -> Twitter Card -> standard HTML tags.
+      // Some sites (e.g. G/O Media properties like theroot.com) serve
+      // Twitter Card tags instead of OG tags to non-social crawlers.
       const title =
-        $('meta[property="og:title"]').attr('content')?.trim() || '';
+        $('meta[property="og:title"]').attr('content')?.trim() ||
+        $('meta[name="twitter:title"]').attr('content')?.trim() ||
+        $('title').first().text().trim() ||
+        '';
+
       const description =
-        $('meta[property="og:description"]').attr('content')?.trim() || '';
+        $('meta[property="og:description"]').attr('content')?.trim() ||
+        $('meta[name="twitter:description"]').attr('content')?.trim() ||
+        $('meta[name="description"]').attr('content')?.trim() ||
+        '';
+
       const imageUrl =
-        $('meta[property="og:image"]').attr('content')?.trim() || '';
+        $('meta[property="og:image"]').attr('content')?.trim() ||
+        $('meta[name="twitter:image"]').attr('content')?.trim() ||
+        $('meta[name="twitter:image:src"]').attr('content')?.trim() ||
+        '';
 
       if (!title || !description || !imageUrl) {
+        log.warn('Missing OG/meta tags', {
+          url: input.url,
+          hasTitle: Boolean(title),
+          hasDescription: Boolean(description),
+          hasImage: Boolean(imageUrl),
+        });
         throw new TRPCError({ code: 'NOT_FOUND', message: 'missing_tags' });
       }
 
