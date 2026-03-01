@@ -31,5 +31,11 @@ export const useOgFetch = () => {
     }
   };
 
-  return { ogData, isLoading, error, handlePaste };
+  const reset = () => {
+    setOgData(null);
+    setError(null);
+    setIsLoading(false);
+  };
+
+  return { ogData, isLoading, error, handlePaste, reset };
 };

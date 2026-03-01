@@ -44,6 +44,7 @@ describe('Composer', () => {
       isLoading: false,
       handlePaste: vi.fn(),
       error: null, // Ensure error property is included
+      reset: vi.fn(),
     });
   });
 
@@ -55,7 +56,9 @@ describe('Composer', () => {
 
   it('should enable the Post button when there is text', () => {
     render(<Composer session={mockSession} />);
-    const textarea = screen.getByPlaceholderText("What's happening?");
+    const textarea = screen.getByPlaceholderText(
+      "What's happening? Paste a link to attach a card."
+    );
     fireEvent.change(textarea, { target: { value: 'Hello world' } });
     const postButton = screen.getByRole('button', { name: /Post/i });
     expect(postButton).toBeEnabled();
@@ -72,6 +75,7 @@ describe('Composer', () => {
       isLoading: false,
       handlePaste: vi.fn(),
       error: null, // Include error property
+      reset: vi.fn(),
     });
 
     render(<Composer session={mockSession} />);
@@ -81,7 +85,9 @@ describe('Composer', () => {
 
   it('should call sendMessage with CREATE_POST on successful post', async () => {
     render(<Composer session={mockSession} />);
-    const textarea = screen.getByPlaceholderText("What's happening?");
+    const textarea = screen.getByPlaceholderText(
+      "What's happening? Paste a link to attach a card."
+    );
     fireEvent.change(textarea, { target: { value: 'Hello world' } });
     const postButton = screen.getByRole('button', { name: /Post/i });
 
@@ -113,6 +119,7 @@ describe('Composer', () => {
       isLoading: false,
       handlePaste: vi.fn(),
       error: null, // Include error property
+      reset: vi.fn(),
     });
 
     render(<Composer session={mockSession} />);
