@@ -15,10 +15,7 @@ const nextConfig = {
     '@opentelemetry/semantic-conventions',
   ],
   outputFileTracingExcludes: {
-    '*': [
-      '**/node_modules/@opentelemetry/**',
-      '**/node_modules/@sentry/tracing/**',
-    ],
+    '*': ['**/node_modules/@sentry/tracing/**'],
   },
   headers: async () => {
     return [
