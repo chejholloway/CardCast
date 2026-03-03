@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { TRPCError } from '@trpc/server';
 import { createTestCaller } from '../../tests/testHelpers';
 import * as rateLimitModule from '../../lib/rateLimit';
 
@@ -50,17 +51,21 @@ describe('ogRouter.fetch', () => {
       secret: process.env.EXTENSION_SHARED_SECRET || 'test-secret-12345',
     });
 
-    // These subdomains were blocked before with "Domain not allowed" (BAD_REQUEST).
-    // Now they pass the protocol check and MSW returns OG data for them.
-    const urls = [
-      'https://news.thehill.com/some-article',
-      'https://sub.theroot.com/some-article',
-      'https://regional.usanews.com/some-article',
+    // These subdomains were previously blocked with "Domain not allowed" (BAD_REQUEST)
+    // because the allowlist stripped www. but not other subdomains. Each has an
+    // explicit MSW handler so cheerio can extract OG tags and return real data.
+    const cases = [
+      { url: 'https://news.thehill.com/some-article', title: 'Test Article' },
+      { url: 'https://sub.theroot.com/some-article', title: 'Root Article' },
+      {
+        url: 'https://regional.usanews.com/some-article',
+        title: 'USA News Article',
+      },
     ];
 
-    for (const url of urls) {
+    for (const { url, title } of cases) {
       const result = await caller.og.fetch({ url });
-      expect(result).toHaveProperty('title');
+      expect(result.title).toBe(title);
       expect(result).toHaveProperty('description');
       expect(result).toHaveProperty('imageUrl');
     }

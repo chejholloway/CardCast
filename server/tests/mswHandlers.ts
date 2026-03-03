@@ -9,8 +9,7 @@ const ogHtml = (title: string, description: string, image: string) => `
   </head></html>
 `;
 
-// Empty HTML — used by the catch-all so unrecognised domains fail fast
-// with missing_tags instead of timing out on a real network call.
+// Empty HTML — used by handlers for domains expected to return missing_tags.
 const emptyHtml = '<html><head></head></html>';
 
 const theHillOg = () =>
@@ -33,7 +32,7 @@ const theRootOg = () =>
     { headers: { 'Content-Type': 'text/html' } }
   );
 
-const usnewsOg = () =>
+const usaNewsOg = () =>
   new HttpResponse(
     ogHtml(
       'USA News Article',
@@ -134,17 +133,29 @@ export const handlers = [
     return new Response('<html></html>', { status: 200 });
   }),
 
-  // OG: thehill.com and all subdomains (e.g. news.thehill.com)
+  // OG: thehill.com — root domain
   http.get('https://thehill.com/:path*', theHillOg),
-  http.get('https://*.thehill.com/:path*', theHillOg),
 
-  // OG: theroot.com and all subdomains
+  // OG: thehill.com subdomains — explicit entries for URLs used in tests.
+  // MSW v2 does not support wildcard hostnames (https://*.thehill.com),
+  // so each subdomain used in tests needs its own handler.
+  http.get('https://news.thehill.com/:path*', theHillOg),
+
+  // OG: theroot.com — root domain and test subdomain
   http.get('https://theroot.com/:path*', theRootOg),
-  http.get('https://*.theroot.com/:path*', theRootOg),
+  http.get('https://sub.theroot.com/:path*', theRootOg),
 
-  // OG: usnews.com and all subdomains
-  http.get('https://usnews.com/:path*', usnewsOg),
-  http.get('https://*.usnews.com/:path*', usnewsOg),
+  // OG: usanews.com — root domain and test subdomain
+  http.get('https://usanews.com/:path*', usaNewsOg),
+  http.get('https://regional.usanews.com/:path*', usaNewsOg),
+
+  // no-og-tags.example.com — returns empty HTML so the missing_tags test
+  // fails fast without hitting a real network timeout.
+  http.get('https://no-og-tags.example.com/:path*', () => {
+    return new HttpResponse(emptyHtml, {
+      headers: { 'Content-Type': 'text/html' },
+    });
+  }),
 
   // Profile endpoint
   http.post('https://bsky.app/xrpc/app.bsky.actor.getProfile', () => {
@@ -159,14 +170,6 @@ export const handlers = [
       followsCount: 0,
       postsCount: 0,
       labels: [],
-    });
-  }),
-
-  // Catch-all: return empty HTML for any unrecognised HTTPS GET so tests
-  // that expect missing_tags fail fast instead of hitting real network timeouts.
-  http.get('https://*/*', () => {
-    return new HttpResponse(emptyHtml, {
-      headers: { 'Content-Type': 'text/html' },
     });
   }),
 ];
