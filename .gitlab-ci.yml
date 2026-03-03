@@ -1,7 +1,6 @@
 stages:
   - build
   - test
-  - deploy
 
 variables:
   NODE_VERSION: "22"
@@ -31,15 +30,3 @@ build:
     expire_in: 2 hours
   variables:
     EXTENSION_SHARED_SECRET: $EXTENSION_SHARED_SECRET
-
-deploy-worker:
-  stage: deploy
-  script:
-    - npx wrangler deploy
-  rules:
-    - if: $CI_COMMIT_BRANCH == "main"
-  variables:
-    CLOUDFLARE_API_TOKEN: $CLOUDFLARE_API_TOKEN
-    EXTENSION_SHARED_SECRET: $EXTENSION_SHARED_SECRET
-  environment:
-    name: production

@@ -16,14 +16,6 @@ const ogOutputSchema = z.object({
   imageUrl: z.string().url(),
 });
 
-const ALLOWED_DOMAINS = [
-  'thehill.com',
-  'theroot.com',
-  'usanews.com',
-  'example.com',
-  'success.com',
-];
-
 const realisticHeaders: Record<string, string> = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
   Accept:
@@ -59,7 +51,7 @@ const withTimeout = async <T>(promise: Promise<T>, ms: number): Promise<T> => {
  * Returns null if the response is missing any required field so the
  * caller can fall back to cheerio.
  */
-const fetchViaLicrolink = async (
+const fetchViaMicrolink = async (
   url: string
 ): Promise<{ title: string; description: string; imageUrl: string } | null> => {
   try {
@@ -132,6 +124,14 @@ export const ogRouter = router({
     .input(ogInputSchema)
     .output(ogOutputSchema)
     .query(async ({ input, ctx }) => {
+      const urlObj = new URL(input.url);
+      if (urlObj.protocol !== 'https:') {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Only HTTPS URLs are supported',
+        });
+      }
+
       const cacheKey = `og:${input.url}`;
       const cached = await kv.get<OgFetchOutput>(cacheKey);
 
@@ -148,19 +148,10 @@ export const ogRouter = router({
         });
       }
 
-      const urlObj = new URL(input.url);
-      const hostname = urlObj.hostname.replace(/^www\./, '');
-      if (!ALLOWED_DOMAINS.includes(hostname)) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Domain not allowed',
-        });
-      }
-
       // Try Microlink first (handles JS-rendered pages), then fall back
       // to cheerio for sites that serve full static HTML.
       log.info('Fetching OG via Microlink', { url: input.url });
-      let result = await fetchViaLicrolink(input.url);
+      let result = await fetchViaMicrolink(input.url);
 
       if (!result) {
         log.info('Microlink miss, falling back to cheerio', { url: input.url });

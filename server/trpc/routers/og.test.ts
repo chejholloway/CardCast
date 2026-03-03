@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { TRPCError } from '@trpc/server';
 import { createTestCaller } from '../../tests/testHelpers';
 import * as rateLimitModule from '../../lib/rateLimit';
 
@@ -30,7 +31,7 @@ describe('ogRouter.fetch', () => {
     });
   });
 
-  it('should fetch OG metadata for allowed domain', async () => {
+  it('should fetch OG metadata for any valid HTTPS domain', async () => {
     const caller = await createTestCaller({
       secret: process.env.EXTENSION_SHARED_SECRET || 'test-secret-12345',
     });
@@ -45,43 +46,66 @@ describe('ogRouter.fetch', () => {
     });
   });
 
-  it('should test OG data retrieval for specified domains', async () => {
-    const domainsToTest = ['thehill.com', 'theroot.com', 'usanews.com'];
+  it('should fetch OG metadata for subdomains', async () => {
+    const caller = await createTestCaller({
+      secret: process.env.EXTENSION_SHARED_SECRET || 'test-secret-12345',
+    });
 
-    for (const domain of domainsToTest) {
-      const caller = await createTestCaller({
-        secret: process.env.EXTENSION_SHARED_SECRET || 'test-secret-12345',
-      });
-      const testUrl = `https://${domain}/some-article`; // Using a placeholder article path
+    // These were previously blocked by the allowlist — subdomains should now work
+    const urls = [
+      'https://news.thehill.com/some-article',
+      'https://theroot.com/some-article',
+      'https://usanews.com/some-article',
+    ];
 
-      try {
-        const result = await caller.og.fetch({
-          url: testUrl,
-        });
-        // Expecting some data to be returned, adjust expectations based on actual mock data
-        expect(result).toHaveProperty('title');
-        expect(result).toHaveProperty('description');
-        expect(result).toHaveProperty('imageUrl');
-        console.log(`Successfully retrieved OG data for ${domain}:`, result);
-      } catch (error) {
-        console.error(`Error retrieving OG data for ${domain}:`, error);
-        // Expecting an error if the domain doesn't return OG data or is blocked
-        expect(error).toBeInstanceOf(Error);
-        // You might want to refine this expectation based on the specific error type
-        // e.g., expect(error.message).toContain('missing_tags');
-      }
+    for (const url of urls) {
+      const result = await caller.og.fetch({ url });
+      expect(result).toHaveProperty('title');
+      expect(result).toHaveProperty('description');
+      expect(result).toHaveProperty('imageUrl');
     }
   });
 
-  it('should throw BAD_REQUEST for blocked domain', async () => {
+  it('should throw NOT_FOUND when no OG tags can be extracted', async () => {
     const caller = await createTestCaller({
       secret: process.env.EXTENSION_SHARED_SECRET,
     });
+
+    // No MSW handler for this domain, so both Microlink and cheerio return null
     await expect(
-      caller.og.fetch({
-        url: 'https://blocked-domain.com/article',
-      })
-    ).rejects.toThrow();
+      caller.og.fetch({ url: 'https://no-og-tags.example.com/article' })
+    ).rejects.toMatchObject({
+      code: 'NOT_FOUND',
+      message: 'missing_tags',
+    });
+  });
+
+  it('should throw BAD_REQUEST for non-HTTPS URLs', async () => {
+    const caller = await createTestCaller({
+      secret: process.env.EXTENSION_SHARED_SECRET,
+    });
+
+    await expect(
+      caller.og.fetch({ url: 'http://plainhttp.com/article' })
+    ).rejects.toMatchObject({
+      code: 'BAD_REQUEST',
+      message: 'Only HTTPS URLs are supported',
+    });
+  });
+
+  it('should throw BAD_REQUEST when rate limit is exceeded', async () => {
+    vi.spyOn(rateLimitModule, 'checkRateLimit').mockResolvedValue(false);
+
+    const caller = await createTestCaller({
+      secret: process.env.EXTENSION_SHARED_SECRET,
+    });
+
+    await expect(
+      caller.og.fetch({ url: 'https://thehill.com/article' })
+    ).rejects.toMatchObject({
+      code: 'BAD_REQUEST',
+      message: 'Rate limit exceeded',
+    });
   });
 
   it('should return loggedIn: false (stateless)', async () => {
