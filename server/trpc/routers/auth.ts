@@ -272,6 +272,7 @@ export const authRouter = router({
     .input(z.object({ did: z.string() }))
     .mutation(async ({ input }) => {
       // Backend is stateless; extension clears local storage.
+      console.info('input: ', input);
       return { success: true };
     }),
 });

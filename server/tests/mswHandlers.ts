@@ -9,11 +9,46 @@ const ogHtml = (title: string, description: string, image: string) => `
   </head></html>
 `;
 
+// Empty HTML — used by the catch-all so unrecognised domains fail fast
+// with missing_tags instead of timing out on a real network call.
+const emptyHtml = '<html><head></head></html>';
+
+const theHillOg = () =>
+  new HttpResponse(
+    ogHtml(
+      'Test Article',
+      'This is a test article',
+      'https://example.com/image.jpg'
+    ),
+    { headers: { 'Content-Type': 'text/html' } }
+  );
+
+const theRootOg = () =>
+  new HttpResponse(
+    ogHtml(
+      'Root Article',
+      'A test article from The Root',
+      'https://example.com/image.jpg'
+    ),
+    { headers: { 'Content-Type': 'text/html' } }
+  );
+
+const usnewsOg = () =>
+  new HttpResponse(
+    ogHtml(
+      'USA News Article',
+      'A test article from USA News',
+      'https://example.com/image.jpg'
+    ),
+    { headers: { 'Content-Type': 'text/html' } }
+  );
+
 export const handlers = [
   // Mock Microlink to test cheerio fallback
   http.get('https://api.microlink.io/', () => {
     return HttpResponse.json({ status: 'error' });
   }),
+
   // Auth - session verification
   http.get('https://bsky.social/xrpc/com.atproto.server.getSession', () => {
     return HttpResponse.json({
@@ -99,41 +134,17 @@ export const handlers = [
     return new Response('<html></html>', { status: 200 });
   }),
 
-  // OG: thehill.com — wildcard covers /article and /some-article
-  http.get('https://thehill.com/:path*', () => {
-    return new HttpResponse(
-      ogHtml(
-        'Test Article',
-        'This is a test article',
-        'https://example.com/image.jpg'
-      ),
-      { headers: { 'Content-Type': 'text/html' } }
-    );
-  }),
+  // OG: thehill.com and all subdomains (e.g. news.thehill.com)
+  http.get('https://thehill.com/:path*', theHillOg),
+  http.get('https://*.thehill.com/:path*', theHillOg),
 
-  // OG: theroot.com — wildcard for domain loop test
-  http.get('https://theroot.com/:path*', () => {
-    return new HttpResponse(
-      ogHtml(
-        'Root Article',
-        'A test article from The Root',
-        'https://example.com/image.jpg'
-      ),
-      { headers: { 'Content-Type': 'text/html' } }
-    );
-  }),
+  // OG: theroot.com and all subdomains
+  http.get('https://theroot.com/:path*', theRootOg),
+  http.get('https://*.theroot.com/:path*', theRootOg),
 
-  // OG: usanews.com — wildcard for domain loop test
-  http.get('https://usanews.com/:path*', () => {
-    return new HttpResponse(
-      ogHtml(
-        'USA News Article',
-        'A test article from USA News',
-        'https://example.com/image.jpg'
-      ),
-      { headers: { 'Content-Type': 'text/html' } }
-    );
-  }),
+  // OG: usnews.com and all subdomains
+  http.get('https://usnews.com/:path*', usnewsOg),
+  http.get('https://*.usnews.com/:path*', usnewsOg),
 
   // Profile endpoint
   http.post('https://bsky.app/xrpc/app.bsky.actor.getProfile', () => {
@@ -148,6 +159,14 @@ export const handlers = [
       followsCount: 0,
       postsCount: 0,
       labels: [],
+    });
+  }),
+
+  // Catch-all: return empty HTML for any unrecognised HTTPS GET so tests
+  // that expect missing_tags fail fast instead of hitting real network timeouts.
+  http.get('https://*/*', () => {
+    return new HttpResponse(emptyHtml, {
+      headers: { 'Content-Type': 'text/html' },
     });
   }),
 ];

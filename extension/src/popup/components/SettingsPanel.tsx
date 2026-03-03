@@ -20,7 +20,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
 
   useEffect(() => {
     chrome.storage.session.get(['allowedDomains'], (result) => {
-      let allowed: string[] = ['thehill.com', 'theroot.com', 'usanews.com'];
+      let allowed: string[] = ['thehill.com', 'theroot.com', 'usnews.com'];
       if (result && Array.isArray(result.allowedDomains)) {
         allowed = result.allowedDomains;
       }

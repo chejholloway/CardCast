@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { TRPCError } from '@trpc/server';
 import { createTestCaller } from '../../tests/testHelpers';
 import * as rateLimitModule from '../../lib/rateLimit';
 
@@ -46,16 +45,17 @@ describe('ogRouter.fetch', () => {
     });
   });
 
-  it('should fetch OG metadata for subdomains', async () => {
+  it('should not block subdomains that were previously excluded by the allowlist', async () => {
     const caller = await createTestCaller({
       secret: process.env.EXTENSION_SHARED_SECRET || 'test-secret-12345',
     });
 
-    // These were previously blocked by the allowlist — subdomains should now work
+    // These subdomains were blocked before with "Domain not allowed" (BAD_REQUEST).
+    // Now they pass the protocol check and MSW returns OG data for them.
     const urls = [
       'https://news.thehill.com/some-article',
-      'https://theroot.com/some-article',
-      'https://usanews.com/some-article',
+      'https://sub.theroot.com/some-article',
+      'https://regional.usanews.com/some-article',
     ];
 
     for (const url of urls) {
@@ -71,7 +71,7 @@ describe('ogRouter.fetch', () => {
       secret: process.env.EXTENSION_SHARED_SECRET,
     });
 
-    // No MSW handler for this domain, so both Microlink and cheerio return null
+    // No OG tags in the catch-all response for unrecognised domains
     await expect(
       caller.og.fetch({ url: 'https://no-og-tags.example.com/article' })
     ).rejects.toMatchObject({

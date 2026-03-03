@@ -14,6 +14,8 @@ interface ManualOgData {
 }
 
 export const Composer: React.FC<ComposerProps> = ({ session }) => {
+  console.info('session: ', session);
+
   const [text, setText] = useState('');
   const { ogData, isLoading, error, handlePaste, reset } = useOgFetch();
   const [isPosting, setIsPosting] = useState(false);
